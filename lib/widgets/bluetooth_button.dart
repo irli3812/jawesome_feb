@@ -47,38 +47,12 @@ class BluetoothButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => _handleConnect(context),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isConnected ? scheme.primary : scheme.surface,
-          foregroundColor: isConnected ? scheme.onPrimary : scheme.primary,
-          side: BorderSide(
-            color: scheme.primary,
-            width: isConnected ? 0 : 1,
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isConnected ? Icons.bluetooth_connected : Icons.bluetooth,
-              size: 20,
-              color: isConnected ? scheme.onPrimary : scheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isConnected ? 'Connected' : 'Connect OraStretch',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: scheme.onSurface),
-            ),
-          ],
-        ),
+    return IconButton(
+      onPressed: () => _handleConnect(context),
+      icon: Icon(
+        isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+        color: Colors.white,
+        size: 24,
       ),
     );
   }

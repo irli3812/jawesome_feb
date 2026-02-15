@@ -33,8 +33,7 @@ class _MyAppState extends State<MyApp> {
   bool isBluetoothConnected = false;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+  Widget build(BuildContext context) { 
     return MaterialApp(
       title: 'Bitefeedback',
       theme: ThemeData(
@@ -50,12 +49,12 @@ class _MyAppState extends State<MyApp> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: const [
                         Text(
                           'Bitefeedback', 
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: scheme.onPrimary,
+                            color: Colors.white,
                             fontSize: 18,
                           ),
                         ),
@@ -64,7 +63,7 @@ class _MyAppState extends State<MyApp> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: scheme.onPrimaryContainer,
+                              color: Color.fromARGB(255, 186, 221, 250),
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -85,7 +84,7 @@ class _MyAppState extends State<MyApp> {
                 ),
               ],
             ),
-            backgroundColor: scheme.primary,
+            backgroundColor: Colors.blue,
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(16),
               child: Container(),
@@ -130,12 +129,11 @@ class _PageNavigationState extends State<PageNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface,
+      decoration: const BoxDecoration(
+        color: Colors.white,
         border: Border(
-          bottom: BorderSide(color: scheme.outline),
+          bottom: BorderSide(color: Color(0xFFBFDBFE)),
         ),
       ),
       child: SingleChildScrollView(
@@ -150,11 +148,11 @@ class _PageNavigationState extends State<PageNavigation> {
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 backgroundColor: isActive
-                    ? scheme.primaryContainer
+                    ? const Color(0xFFEFF6FF)
                     : Colors.transparent,
                 foregroundColor: isActive
-                    ? scheme.onPrimaryContainer
-                    : scheme.onSurfaceVariant,
+                    ? const Color(0xFF1D4ED8)
+                    : const Color(0xFF374151),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -163,8 +161,8 @@ class _PageNavigationState extends State<PageNavigation> {
                     widget.pages[index].title,
                     style: TextStyle(
                       color: isActive
-                          ? scheme.onPrimaryContainer
-                          : scheme.onSurfaceVariant,
+                          ? const Color(0xFF1D4ED8)
+                          : const Color(0xFF374151),
                     ),
                   ),
                   if (isActive)
@@ -172,7 +170,7 @@ class _PageNavigationState extends State<PageNavigation> {
                       margin: const EdgeInsets.only(top: 4),
                       height: 2,
                       width: 40,
-                      color: scheme.primary,
+                      color: const Color(0xFF2563EB),
                     ),
                 ],
               ),
