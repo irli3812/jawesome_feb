@@ -1,0 +1,185 @@
+import 'package:flutter/material.dart';
+import 'pages.dart';
+import 'widgets/bluetooth_button.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Hive.openBox('appBox');
+  runApp(const MyApp());
+}
+
+/// Global Meter Gauge Limits RECORD MOUTH OPENING
+const double gaugeMin = -180.0;
+const double gaugeMax = 180.0;
+const int minorDivisions = 12;
+const int majorDivisions = 2;
+
+/// Global Meter Gauge Limits RECORD BITE FORCE (BF)
+const double bfGaugeMin = -180.0;
+const double bfGaugeMax = 180.0;
+const int bfMinorDivisions = 12;
+const int bfMajorDivisions = 2;
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool isBluetoothConnected = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return MaterialApp(
+      title: 'Bitefeedback',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: Scaffold(
+        appBar: AppBar(
+            title: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                        Text(
+                          'Bitefeedback', 
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: scheme.onPrimary,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          'OraStretch Companion',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: scheme.onPrimaryContainer,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: BluetoothButton(
+                    isConnected: isBluetoothConnected,
+                    onConnectionChange: (isConnected) {
+                      setState(() {
+                        isBluetoothConnected = isConnected;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: scheme.primary,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(16),
+              child: Container(),
+            )
+          ),
+        body: MyPage(isBluetoothConnected: isBluetoothConnected),
+      ),
+    );
+  }
+}
+
+class PageItem {
+  final String id;
+  final String title;
+  final Widget Function() builder;
+
+  PageItem({
+    required this.id,
+    required this.title,
+    required this.builder,
+  });
+}
+
+class PageNavigation extends StatefulWidget {
+  final List<PageItem> pages;
+  final int currentPageIndex;
+  final Function(int) onPageChange;
+
+  const PageNavigation({
+    super.key,
+    required this.pages,
+    required this.currentPageIndex,
+    required this.onPageChange,
+  });
+
+  @override
+  State<PageNavigation> createState() => _PageNavigationState();
+}
+
+class _PageNavigationState extends State<PageNavigation> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          bottom: BorderSide(color: scheme.outline),
+        ),
+      ),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: List.generate(widget.pages.length, (index) {
+            final bool isActive = index == widget.currentPageIndex;
+            return TextButton(
+              onPressed: () => widget.onPageChange(index),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                backgroundColor: isActive
+                    ? scheme.primaryContainer
+                    : Colors.transparent,
+                foregroundColor: isActive
+                    ? scheme.onPrimaryContainer
+                    : scheme.onSurfaceVariant,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.pages[index].title,
+                    style: TextStyle(
+                      color: isActive
+                          ? scheme.onPrimaryContainer
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (isActive)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      height: 2,
+                      width: 40,
+                      color: scheme.primary,
+                    ),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
