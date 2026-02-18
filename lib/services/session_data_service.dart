@@ -33,7 +33,7 @@ class SessionDataService {
   
   int? _sessionStartMs;
   bool _isRecording = false;
-  Timer? _uiTicker;
+  //Timer? _uiTicker;
   
   bool get isRunning => _isRecording;
   
@@ -54,7 +54,14 @@ class SessionDataService {
     if (value.isEmpty) return;
 
     final raw = utf8.decode(value).trim();
-    final double? incoming = double.tryParse(raw);
+
+    final parts = raw.split(',');
+    if (parts.length !=2) return; // 
+
+    final int? timestamp = int.tryParse(parts[0]);
+    final double? incomingAngle = double.tryParse(parts[1]);
+
+    /*final double? incoming = double.tryParse(raw);
     if (incoming == null) return;
 
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -62,62 +69,91 @@ class SessionDataService {
     final elapsed = now - _sessionStartMs!;
 
     final double biteForce = incoming;
-    final double mouthOpening = incoming;
+    final double mouthOpening = incoming;*/
+
+    if (timestamp == null || incomingAngle == null) return;
+
+    _sessionStartMs ??= timestamp;
+    final int relativeElapsed = timestamp - _sessionStartMs!;
+
+    final double biteForce = incomingAngle;
+    final double mouthOpening = incomingAngle;
 
     _rows.add(
       SessionRow(
         biteForce: biteForce.toInt(),
         mouthOpening: mouthOpening.toInt(),
-        elapsedMs: elapsed,
+        elapsedMs: relativeElapsed,
       ),
     );
 
-    _box.put('bite_force_data', biteForce.toDouble());
+    /*_box.put('bite_force_data', biteForce.toDouble());
     _box.put('interincisal_opening_data', mouthOpening.toDouble());
-    _box.put('last_update', now);
+    //_box.put('last_update', now);
+    _box.put('last_update', relativeElapsed);*/
+
+    final List session = List.from(_box.get('current_session', defaultValue: []));
+
+    session.add({
+      'time_ms': relativeElapsed,
+      'bite_force': biteForce,
+      'mouth_opening': mouthOpening,
+    });
+
+    _box.put('current_session', session);
   }
 
   void start() {
+
+    if (_characteristic == null) {
+      print("❌ Cannot start — BLE not attached.");
+      return;
+    }
+
     _rows.clear();
-    _sessionStartMs = DateTime.now().millisecondsSinceEpoch;
+    _sessionStartMs = null;
+    //_sessionStartMs = DateTime.now().millisecondsSinceEpoch;
     _isRecording = true;
 
-    _bleSub?.cancel();
+    /*_bleSub?.cancel();
     if (_characteristic != null) {
       _bleSub = _characteristic!.lastValueStream.listen(_onBleData);
       _characteristic!.setNotifyValue(true);
-    }
+    }*/
 
-    _uiTicker?.cancel();
+    /*_uiTicker?.cancel();
     _uiTicker = Timer.periodic(
       const Duration(milliseconds: 100),
       (_) {
         _box.put('clock_tick', DateTime.now().millisecondsSinceEpoch);
       },
-    );
+    );*/
 
-    _box.put('last_update', DateTime.now().millisecondsSinceEpoch);
+    //_box.put('last_update', DateTime.now().millisecondsSinceEpoch);
+    _box.put('current_session', []);
+    _box.put('last_update', 0);
   }
 
   void stop() {
     _isRecording = false;
 
-    _bleSub?.cancel();
+    /*_bleSub?.cancel();
     _bleSub = null;
-    _characteristic?.setNotifyValue(false);
+    _characteristic?.setNotifyValue(false);*/
 
-    _uiTicker?.cancel();
-    _uiTicker = null;
+    /*_uiTicker?.cancel();
+    _uiTicker = null;*/
   }
 
   void clear() {
     _rows.clear();
     _sessionStartMs = null;
+    _box.delete('current_session');
     _box.delete('last_update');
   }
 
   void dispose() {
-    _uiTicker?.cancel();
+    //_uiTicker?.cancel();
     _bleSub?.cancel();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'pages.dart';
 import 'widgets/bluetooth_button.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'services/session_data_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
@@ -79,6 +81,47 @@ class _MyAppState extends State<MyApp> {
                       setState(() {
                         isBluetoothConnected = isConnected;
                       });
+                    },
+                    onDeviceSelected: (device) async {
+                      if (device == null) return;
+                      try {
+                        final services = await device.discoverServices();
+                        BluetoothCharacteristic? chosen;
+                        for (final s in services) {
+                          for (final c in s.characteristics) {
+                            if (c.properties.notify) {
+                              chosen = c;
+                              break;
+                            }
+                          }
+                          if (chosen != null) break;
+                        }
+                        if (chosen == null) {
+                          for (final s in services) {
+                            if (s.characteristics.isNotEmpty) {
+                              chosen = s.characteristics.first;
+                              break;
+                            }
+                          }
+                        }
+                        if (chosen != null) {
+                          SessionDataService().attachBleCharacteristic(chosen);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No notifiable characteristic found on device.'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error discovering characteristics: ${e.toString()}'),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
