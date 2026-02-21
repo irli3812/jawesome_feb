@@ -1,15 +1,11 @@
 // ignore_for_file: unused_field
 
-//import 'dart:async';
-//import 'dart:convert';
 import 'package:flutter/material.dart';
-//import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-//import '../services/session_data_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 
 class BLEdata extends StatefulWidget {
   const BLEdata({super.key});
+
   @override
   State<BLEdata> createState() => _BLEdataState();
 }
@@ -18,24 +14,16 @@ class _BLEdataState extends State<BLEdata> {
   final Box _box = Hive.box('appBox');
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+          // ───────────────────────── Header ─────────────────────────
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
-              children: const [
+              children: [
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -62,14 +50,13 @@ class _BLEdataState extends State<BLEdata> {
           ),
           const Divider(height: 1),
 
+          // ───────────────────────── Live table ─────────────────────────
           Expanded(
             child: ValueListenableBuilder(
-              valueListenable: _box.listenable(
-                keys: ['current_session'],
-              ),
+              valueListenable: _box.listenable(keys: ['session']),
               builder: (context, Box box, _) {
                 final List session =
-                    box.get('current_session', defaultValue: []);
+                    box.get('session', defaultValue: []);
 
                 if (session.isEmpty) {
                   return const Center(
@@ -117,9 +104,8 @@ class _BLEdataState extends State<BLEdata> {
               },
             ),
           ),
-
         ],
       ),
-    ); 
+    );
   }
 }
