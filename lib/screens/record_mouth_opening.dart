@@ -281,10 +281,10 @@ class _SemiGaugePainter extends CustomPainter {
       ..strokeWidth = 2;
 
     for (int step = 0; step <= minorDivisions; step++) {
-      final double value =
+      final double val =
           gaugeMin + (step / minorDivisions) * (gaugeMax - gaugeMin);
 
-      final double t = (value - gaugeMin) / (gaugeMax - gaugeMin);
+      final double t = (val - gaugeMin) / (gaugeMax - gaugeMin);
       final double angle = pi + t * pi;
 
       final bool major = step % majorDivisions == 0;
@@ -307,7 +307,7 @@ class _SemiGaugePainter extends CustomPainter {
       if (major) {
         final tp = TextPainter(
           text: TextSpan(
-            text: value.round().toString(),
+            text: val.round().toString(),
             style: const TextStyle(
               fontSize: 12,
               color: Colors.black,
@@ -345,5 +345,6 @@ class _SemiGaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(_SemiGaugePainter oldDelegate) =>
+      oldDelegate.value != value;
 }

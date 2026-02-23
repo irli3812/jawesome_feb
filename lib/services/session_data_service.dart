@@ -111,6 +111,10 @@ class SessionDataService extends ChangeNotifier {
 
     _box.put('session', session);
 
+    // Update real-time display values in Hive
+    _box.put('bite_force_data', angle);
+    _box.put('interincisal_opening_data', angle);
+
     notifyListeners();
   }
 

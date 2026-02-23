@@ -360,5 +360,6 @@ class _BiteForceGaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(_BiteForceGaugePainter oldDelegate) =>
+      oldDelegate.value != value;
 }
