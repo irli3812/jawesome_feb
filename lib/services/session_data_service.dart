@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names, non_constant_identifier_names
+// ignore_for_file: constant_identifier_names, non_constant_identifier_names, unused_field
 
 import 'dart:async';
 import 'dart:convert';
@@ -70,7 +70,7 @@ static const _biteMaxSeriesKey = 'bite_force_max_series';
     return raw.map<SessionRow>((e) {
       return SessionRow(
         elapsedMs: (e['time_ms'] as num).toInt(),
-        biteForce: (e['bite_force'] as num).toInt(),
+        biteForce: ((e['avg_bite_force'] ?? 0) as num).toInt(),
         mouthOpening: (e['mouth_opening'] as num).toInt(),
       );
     }).toList(growable: false);
@@ -209,6 +209,16 @@ static const _biteMaxSeriesKey = 'bite_force_max_series';
       utf8.encode("RESET"),
       withoutResponse: true,
     );*/
+
+    _firstDeviceMillis = null;
+    _box.put(_timeKey, []);
+    _box.put(_IOcurrentSeriesKey, []);
+    _box.put(_IOavgSeriesKey, []);
+    _box.put(_IOmaxSeriesKey, []);
+    _box.put(_biteCurrentSeriesKey, []);
+    _box.put(_biteAvgSeriesKey, []);
+    _box.put(_biteMaxSeriesKey, []);
+    _box.put('session', []);
 
     _box.put('is_recording', true);
 
