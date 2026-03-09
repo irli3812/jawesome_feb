@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'pages.dart';
 import 'widgets/bluetooth_button.dart';
@@ -105,7 +107,7 @@ class _MyAppState extends State<MyApp> {
                           }
                         }
                         if (chosen != null) {
-                          SessionDataService().attachBleCharacteristic(chosen);
+                          SessionDataService().attachBleCharacteristics(chosen);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
