@@ -97,6 +97,14 @@ class _MyAppState extends State<MyApp> {
 
                       final services = await device.discoverServices();
 
+                      /// DEBUG: print everything the ESP32 exposes
+                      for (final s in services) {
+                        debugPrint("SERVICE: ${s.uuid}");
+                        for (final c in s.characteristics) {
+                          debugPrint("  CHARACTERISTIC: ${c.uuid}");
+                        }
+                      }
+
                       BluetoothCharacteristic? dataCharacteristic;
                       BluetoothCharacteristic? commandCharacteristic;
 
