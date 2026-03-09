@@ -205,12 +205,12 @@ static const _biteMaxSeriesKey = 'bite_force_max_series';
       return;
     }
 
-    print("Sending RESET to ESP32");
+    //print("Sending RESET to ESP32");
 
-    /*await _commandCharacteristic!.write(
+    await _commandCharacteristic!.write(
       utf8.encode("RESET"),
       withoutResponse: true,
-    );*/
+    );
 
     _firstDeviceMillis = null;
 
