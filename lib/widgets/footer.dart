@@ -21,8 +21,8 @@ class Footer extends StatefulWidget {
 
 class _FooterState extends State<Footer> {
   final SessionDataService _session = SessionDataService();
-  void _startSession() {
-    _session.start();
+  Future<void> _startSession() async {
+    await _session.start();
     widget.onStartSession();
   }
 
