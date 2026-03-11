@@ -21,10 +21,10 @@ const int minorDivisions = 12;
 const int majorDivisions = 2;
 
 /// Global Meter Gauge Limits RECORD BITE FORCE (BF)
-const double bfGaugeMin = -180.0;
-const double bfGaugeMax = 180.0;
-const int bfMinorDivisions = 12;
-const int bfMajorDivisions = 2;
+const double bfGaugeMin = 0.0;
+const double bfGaugeMax = 150.0;
+const int bfMinorDivisions = 15;
+const int bfMajorDivisions = 5;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
