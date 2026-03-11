@@ -84,7 +84,8 @@ class _TsBiteForcePainter extends CustomPainter {
     const double leftPad = 45;
     const double rightPad = 10;
     const double topPad = 10;
-    const double bottomPad = 30;
+    // leave more room for x-axis tick labels
+    const double bottomPad = 45;
 
     final double width = size.width - leftPad - rightPad;
     final double height = size.height - topPad - bottomPad;
@@ -131,8 +132,8 @@ class _TsBiteForcePainter extends CustomPainter {
 
       final tp = TextPainter(
         text: TextSpan(
-          text: (t / 1000).toStringAsFixed(1),
-          style: const TextStyle(fontSize: 10),
+          text: '${(t / 1000).toStringAsFixed(1)} s',
+          style: const TextStyle(fontSize: 10, color: Colors.black),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -145,7 +146,11 @@ class _TsBiteForcePainter extends CustomPainter {
     final TextPainter xTp = TextPainter(
       text: const TextSpan(
         text: xLabel,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -173,13 +178,14 @@ class _TsBiteForcePainter extends CustomPainter {
 
       final tp = TextPainter(
         text: TextSpan(
-          text: v.toInt().toString(),
-          style: const TextStyle(fontSize: 10),
+          text: '${v.toInt()} N',
+          style: const TextStyle(fontSize: 10, color: Colors.black),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
 
-      tp.paint(canvas, Offset(4, y - tp.height / 2));
+      // position label just left of axis, inside leftPad
+      tp.paint(canvas, Offset(origin.dx - tp.width - 4, y - tp.height / 2));
     }
 
     // draw y-axis title
@@ -187,7 +193,11 @@ class _TsBiteForcePainter extends CustomPainter {
     final TextPainter yTp = TextPainter(
       text: const TextSpan(
         text: yLabel,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
