@@ -28,11 +28,13 @@ class TsBiteForce extends StatelessWidget {
         }
 
         final List<Offset> allPoints = [];
+        final List<Offset> avgPoints = [];
 
         for (final row in session) {
           final int time = (row['time_ms'] ?? 0) as int;
 
           double b1 = 0;
+          double avg = 0;
 
           if (row['bites'] != null) {
             final List bites = List.from(row['bites']);
@@ -41,7 +43,12 @@ class TsBiteForce extends StatelessWidget {
             }
           }
 
+          if (row['avg_bite_force'] != null) {
+            avg = (row['avg_bite_force'] as num).toDouble();
+          }
+
           allPoints.add(Offset(time.toDouble(), b1));
+          avgPoints.add(Offset(time.toDouble(), avg));
         }
 
         final double latestTime = allPoints.isNotEmpty ? allPoints.last.dx : 0;
@@ -54,10 +61,14 @@ class TsBiteForce extends StatelessWidget {
         final List<Offset> points = allPoints
             .where((p) => p.dx >= minTime)
             .toList();
+        final List<Offset> avgFiltered = avgPoints
+            .where((p) => p.dx >= minTime)
+            .toList();
 
         return CustomPaint(
           painter: _TsBiteForcePainter(
-            points: points,
+            bitePoints: points,
+            avgPoints: avgFiltered,
             minTime: minTime,
             latestTime: latestTime,
           ),
@@ -69,12 +80,14 @@ class TsBiteForce extends StatelessWidget {
 }
 
 class _TsBiteForcePainter extends CustomPainter {
-  final List<Offset> points;
+  final List<Offset> bitePoints;
+  final List<Offset> avgPoints;
   final double minTime;
   final double latestTime;
 
   const _TsBiteForcePainter({
-    required this.points,
+    required this.bitePoints,
+    required this.avgPoints,
     required this.minTime,
     required this.latestTime,
   });
@@ -102,6 +115,11 @@ class _TsBiteForcePainter extends CustomPainter {
 
     final linePaint = Paint()
       ..color = Colors.blue
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final avgPaint = Paint()
+      ..color = Colors.orange
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
@@ -156,7 +174,7 @@ class _TsBiteForcePainter extends CustomPainter {
     )..layout();
     xTp.paint(
       canvas,
-      Offset(origin.dx + width / 2 - xTp.width / 2, origin.dy + 20),
+      Offset(origin.dx + width / 2 - xTp.width / 2, origin.dy + 25),
     );
 
     /// Y GRID + LABELS (every 10 units)
@@ -203,11 +221,44 @@ class _TsBiteForcePainter extends CustomPainter {
     )..layout();
 
     canvas.save();
-    // position at vertical center left of axis
-    canvas.translate(leftPad / 2, origin.dy - height / 2);
+    // position at vertical center left of axis with extra offset
+    canvas.translate(leftPad / 2 - 15, origin.dy - height / 2);
     canvas.rotate(-3.14159 / 2);
     yTp.paint(canvas, Offset(-yTp.width / 2, -yTp.height / 2));
     canvas.restore();
+
+    /// LEGEND
+    // top-right corner, small swatches
+    final double legendX = size.width - rightPad - 100;
+    final double legendY = topPad + 5;
+    const double sw = 12;
+    // packet bite force
+    canvas.drawLine(
+      Offset(legendX, legendY + sw / 2),
+      Offset(legendX + sw, legendY + sw / 2),
+      linePaint,
+    );
+    final TextPainter legend1 = TextPainter(
+      text: const TextSpan(
+        text: ' packet',
+        style: TextStyle(fontSize: 10, color: Colors.black),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    legend1.paint(canvas, Offset(legendX + sw + 4, legendY));
+    // average (dashed)
+    final Path legendAvgPath = Path()
+      ..moveTo(legendX, legendY + sw + 16)
+      ..lineTo(legendX + sw, legendY + sw + 16);
+    _drawDashedPath(canvas, legendAvgPath, avgPaint);
+    final TextPainter legend2 = TextPainter(
+      text: const TextSpan(
+        text: ' average',
+        style: TextStyle(fontSize: 10, color: Colors.black),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    legend2.paint(canvas, Offset(legendX + sw + 4, legendY + sw + 12));
 
     /// SCALE FUNCTION
 
@@ -222,20 +273,50 @@ class _TsBiteForcePainter extends CustomPainter {
       return Offset(x, y);
     }
 
-    /// DATA LINE
+    /// DATA LINES
 
-    if (points.isNotEmpty) {
+    if (bitePoints.isNotEmpty) {
       final path = Path();
-
-      final first = scalePoint(points.first);
+      final first = scalePoint(bitePoints.first);
       path.moveTo(first.dx, first.dy);
-
-      for (int i = 1; i < points.length; i++) {
-        final scaled = scalePoint(points[i]);
+      for (int i = 1; i < bitePoints.length; i++) {
+        final scaled = scalePoint(bitePoints[i]);
         path.lineTo(scaled.dx, scaled.dy);
       }
-
       canvas.drawPath(path, linePaint);
+    }
+
+    if (avgPoints.isNotEmpty) {
+      final path2 = Path();
+      final first = scalePoint(avgPoints.first);
+      path2.moveTo(first.dx, first.dy);
+      for (int i = 1; i < avgPoints.length; i++) {
+        final scaled = scalePoint(avgPoints[i]);
+        path2.lineTo(scaled.dx, scaled.dy);
+      }
+      // draw dashed average line
+      _drawDashedPath(canvas, path2, avgPaint);
+    }
+  }
+
+  void _drawDashedPath(
+    Canvas canvas,
+    Path original,
+    Paint paint, {
+    double dashWidth = 5,
+    double gapWidth = 3,
+  }) {
+    for (final metric in original.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double next = distance + dashWidth;
+        final Path segment = metric.extractPath(
+          distance,
+          next.clamp(0.0, metric.length),
+        );
+        canvas.drawPath(segment, paint);
+        distance = next + gapWidth;
+      }
     }
   }
 
