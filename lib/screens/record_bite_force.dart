@@ -1,4 +1,4 @@
-// REDO
+// DEFAULT METER MODE
 
 // ignore_for_file: unnecessary_underscores
 
@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
+import '../widgets/ts_bite_force.dart';
 
 enum ViewMode { spatial, meter, timeseries }
 
@@ -123,12 +124,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                       style: TextStyle(color: Colors.grey),
                     ),
                   )
-                : const Center(
-                    child: Text(
-                      'Time series view coming soon',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
+                : const TsBiteForce(),
           ),
 
           const SizedBox(height: 16),
