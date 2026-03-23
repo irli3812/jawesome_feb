@@ -92,6 +92,7 @@ class _TsBiteForceState extends State<TsBiteForce> {
 
     return Column(
       children: [
+        // Button
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Align(
@@ -116,6 +117,45 @@ class _TsBiteForceState extends State<TsBiteForce> {
             ),
           ),
         ),
+
+        // ✅ Legend at top-left, horizontal
+        ValueListenableBuilder(
+          valueListenable: box.listenable(keys: ['session']),
+          builder: (context, Box box, _) {
+            final List session =
+                List.from(box.get('session', defaultValue: []));
+
+            final Set<int> activeSensors = selectedSensors;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: activeSensors.map((s) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 3,
+                          color: _SimplePainter.colors[
+                              (s - 1) % _SimplePainter.colors.length],
+                        ),
+                        const SizedBox(width: 4),
+                        Text("$s"),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Plot
         Expanded(
           child: ValueListenableBuilder(
             valueListenable: box.listenable(keys: ['session']),
@@ -171,35 +211,9 @@ class _TsBiteForceState extends State<TsBiteForce> {
                     .toList();
               }
 
-              return Row(
-                children: [
-                  Expanded(
-                    child: CustomPaint(
-                      painter:
-                          _SimplePainter(filtered, minTime, latestTime),
-                      size: Size.infinite,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 80,
-                    child: ListView(
-                      children: filtered.keys.map((s) {
-                        return Row(
-                          children: [
-                            Container(
-                              width: 20,
-                              height: 3,
-                              color: _SimplePainter.colors[(s - 1) %
-                                  _SimplePainter.colors.length],
-                            ),
-                            const SizedBox(width: 6),
-                            Text("$s"),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
+              return CustomPaint(
+                painter: _SimplePainter(filtered, minTime, latestTime),
+                size: Size.infinite,
               );
             },
           ),
@@ -231,10 +245,10 @@ class _SimplePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const double bottomPad = 30; // ✅ space for x-label
+    const double bottomPad = 30;
     final double height = size.height - bottomPad;
 
-    const double leftPad = 60;
+    const double leftPad = 90;
     final double width = size.width - leftPad - 10;
 
     final bgPaint = Paint()..color = Colors.white;
@@ -287,13 +301,13 @@ class _SimplePainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
 
-      tp.paint(canvas, Offset(5, y - 6));
+      tp.paint(canvas, Offset(40, y - 6));
     }
 
-    // X label BELOW axis
+    // X label
     final xLabel = TextPainter(
       text: const TextSpan(
-        text: "Time (units)",
+        text: "Time (ms)",
         style: TextStyle(color: Colors.black, fontSize: 12),
       ),
       textDirection: TextDirection.ltr,
@@ -311,7 +325,7 @@ class _SimplePainter extends CustomPainter {
     )..layout();
 
     canvas.save();
-    canvas.translate(10, height / 2 + 50);
+    canvas.translate(5, height / 2 + 50);
     canvas.rotate(-3.14159 / 2);
     yLabel.paint(canvas, Offset(0, 0));
     canvas.restore();
