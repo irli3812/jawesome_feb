@@ -69,7 +69,6 @@ class _TsBiteForceState extends State<TsBiteForce> {
               for (int i = 1; i <= 10; i++) i: [],
             };
 
-            // Build averaged data
             for (final row in session) {
               final int time = (row['time_ms'] ?? 0) as int;
 
@@ -95,11 +94,14 @@ class _TsBiteForceState extends State<TsBiteForce> {
               }
             }
 
-            final double latestTime =
-                sensorPoints[1]!.isNotEmpty ? sensorPoints[1]!.last.dx : 0;
+            final double latestTime = sensorPoints[1]!.isNotEmpty
+                ? sensorPoints[1]!.last.dx
+                : 0;
 
-            final double minTime =
-                (latestTime - TsBiteForce.windowMs).clamp(0, double.infinity);
+            final double minTime = (latestTime - TsBiteForce.windowMs).clamp(
+              0,
+              double.infinity,
+            );
 
             final Map<int, List<Offset>> filtered = {};
 
@@ -121,7 +123,7 @@ class _TsBiteForceState extends State<TsBiteForce> {
           right: 10,
           child: ElevatedButton(
             onPressed: _openSensorSelector,
-            child: const Text("Sensors"),
+            child: const Text("Select Sensor Pair(s)"),
           ),
         ),
       ],
@@ -151,7 +153,7 @@ class _SimplePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double width = size.width * 0.8;
+    final double width = size.width * 0.75;
     final double height = size.height;
 
     const double leftPad = 10;
@@ -159,8 +161,8 @@ class _SimplePainter extends CustomPainter {
     Offset scale(Offset p) {
       final x = leftPad + ((p.dx - minTime) / (maxTime - minTime)) * width;
 
-      final y = height -
-          ((p.dy - bfGaugeMin) / (bfGaugeMax - bfGaugeMin)) * height;
+      final y =
+          height - ((p.dy - bfGaugeMin) / (bfGaugeMax - bfGaugeMin)) * height;
 
       return Offset(x, y);
     }
@@ -190,20 +192,26 @@ class _SimplePainter extends CustomPainter {
       i++;
     }
 
-    // Legend
-    double y = 20;
+    // ✅ Bottom-right legend
+    // ✅ Bottom-right legend (correctly anchored)
+    const double rowHeight = 18;
+    const double bottomPad = 10;
+
+    final double xLineStart = size.width - 120;
+    final double xLineEnd = size.width - 100;
+    final double xText = size.width - 95;
+
     i = 0;
 
-    for (final s in data.keys) {
+    // Start from bottom and go UP
+    double y = size.height - bottomPad;
+
+    for (final s in data.keys.toList().reversed) {
       final paint = Paint()
         ..color = colors[i % colors.length]
         ..strokeWidth = 3;
 
-      canvas.drawLine(
-        Offset(width + 20, y),
-        Offset(width + 40, y),
-        paint,
-      );
+      canvas.drawLine(Offset(xLineStart, y), Offset(xLineEnd, y), paint);
 
       final tp = TextPainter(
         text: TextSpan(
@@ -213,9 +221,9 @@ class _SimplePainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
 
-      tp.paint(canvas, Offset(width + 45, y - 6));
+      tp.paint(canvas, Offset(xText, y - 6));
 
-      y += 20;
+      y -= rowHeight; // move UP each row
       i++;
     }
   }
