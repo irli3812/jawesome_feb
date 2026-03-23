@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
 import '../widgets/ts_bite_force.dart';
+import '../widgets/spatial_bite_force.dart';
 
 enum ViewMode { spatial, meter, timeseries }
 
@@ -116,12 +117,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                     },
                   )
                 : _viewMode == ViewMode.spatial
-                ? const Center(
-                    child: Text(
-                      'Spatial teeth map coming soon',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
+                ? const SpatialBiteForce()
                 : const TsBiteForce(),
           ),
 
