@@ -1,4 +1,4 @@
-// REDO
+// DEFAULT METER MODE
 
 // ignore_for_file: unnecessary_underscores
 
@@ -6,26 +6,21 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
+import '../widgets/ts_bite_force.dart';
+import '../widgets/spatial_bite_force.dart';
 
 enum ViewMode { spatial, meter, timeseries }
 
 class RecordBiteForce extends StatefulWidget {
   final bool isBluetoothConnected;
 
-  const RecordBiteForce({
-    super.key,
-    required this.isBluetoothConnected,
-  });
+  const RecordBiteForce({super.key, required this.isBluetoothConnected});
 
   @override
   State<RecordBiteForce> createState() => _RecordBiteForceState();
 }
 
 class _RecordBiteForceState extends State<RecordBiteForce> {
-  double _maxValue = 0.0;
-  double _sum = 0.0;
-  int _count = 0;
-
   int? _lastResetSignal;
   int? _lastStartSignal;
   ViewMode _viewMode = ViewMode.spatial;
@@ -86,93 +81,101 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
             child: _viewMode == ViewMode.meter
                 ? ValueListenableBuilder(
                     valueListenable: box.listenable(
-                      keys: ['bite_force_data', 'resetSignal', 'startSignal'],
+                      keys: [
+                        'session',
+                        'startSignal',
+                      ],
                     ),
                     builder: (context, _, __) {
-                      final int? resetSignal =
-                          box.get('resetSignal');
-                      final int? startSignal =
-                          box.get('startSignal');
+                      final int? resetSignal = box.get('resetSignal');
+                      final int? startSignal = box.get('startSignal');
 
                       if (resetSignal != null &&
                           resetSignal != _lastResetSignal) {
                         _lastResetSignal = resetSignal;
-                        _maxValue = 0;
-                        _sum = 0;
-                        _count = 0;
                       }
 
                       if (startSignal != null &&
                           startSignal != _lastStartSignal) {
                         _lastStartSignal = startSignal;
-                        _maxValue = 0;
-                        _sum = 0;
-                        _count = 0;
                       }
 
-                        final dynamic raw =
-                          box.get('bite_force_data', defaultValue: 0);
-                        final double value = (raw as num).toDouble();
+                      final List avgSeries = box.get(
+                        'bite_force_avg_series',
+                        defaultValue: [],
+                      );
+
+                      final avg = avgSeries.isEmpty
+                          ? 0.0
+                          : (avgSeries.last as num).toDouble();
 
                       return SizedBox.expand(
                         child: CustomPaint(
-                          painter:
-                              _BiteForceGaugePainter(value: value),
+                          painter: _BiteForceGaugePainter(value: avg),
                         ),
                       );
                     },
                   )
                 : _viewMode == ViewMode.spatial
-                    ? const Center(
-                        child: Text(
-                          'Spatial teeth map coming soon',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                    : const Center(
-                        child: Text(
-                          'Time series view coming soon',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
+                ? const SpatialBiteForce()
+                : const TsBiteForce(),
           ),
 
           const SizedBox(height: 16),
 
           // ===== METRICS =====
           ValueListenableBuilder(
-            valueListenable:
-                box.listenable(keys: ['bite_force_data', 'resetSignal', 'startSignal']),
+            // rebuild when the underlying series update or control signals change
+            valueListenable: box.listenable(
+              keys: [
+                'session',
+                'bite_force_avg_series',
+                'bite_force_max_series',
+                'resetSignal',
+                'startSignal',
+              ],
+            ),
             builder: (context, _, __) {
-              final int? resetSignal =
-                  box.get('resetSignal');
-              final int? startSignal =
-                  box.get('startSignal');
+              final int? resetSignal = box.get('resetSignal');
+              final int? startSignal = box.get('startSignal');
 
-              if (resetSignal != null &&
-                  resetSignal != _lastResetSignal) {
+              if (resetSignal != null && resetSignal != _lastResetSignal) {
                 _lastResetSignal = resetSignal;
-                _maxValue = 0;
-                _sum = 0;
-                _count = 0;
               }
 
-              if (startSignal != null &&
-                  startSignal != _lastStartSignal) {
+              if (startSignal != null && startSignal != _lastStartSignal) {
                 _lastStartSignal = startSignal;
-                _maxValue = 0;
-                _sum = 0;
-                _count = 0;
               }
-                final dynamic raw =
-                  box.get('bite_force_data', defaultValue: 0);
-                final double value = (raw as num).toDouble();
+              // the average series holds the per‑sample averages coming from BLE
+              final List avgSeries = box.get(
+                'bite_force_avg_series',
+                defaultValue: [],
+              );
 
-                _count++;
-                _sum += value;
-                if (value > _maxValue) _maxValue = value;
+              // "latest" should reflect the most recent averaged value
+              final double latest = avgSeries.isNotEmpty
+                  ? (avgSeries.last as num).toDouble()
+                  : 0.0;
 
-                final double avg = _count == 0 ? 0 : _sum / _count;
+              // compute an overall average of all entries in the avgSeries
+              double avg = 0.0;
+              if (avgSeries.isNotEmpty) {
+                final sum = avgSeries.fold<double>(
+                  0.0,
+                  (p, e) => p + (e as num).toDouble(),
+                );
+                avg = sum / avgSeries.length;
+              }
+
+              final List maxSeries = box.get(
+                'bite_force_max_series',
+                defaultValue: [],
+              );
+
+              double max = 0;
+              if (maxSeries.isNotEmpty) {
+                max = (maxSeries.last as num).toDouble();
+              }
 
               return Column(
                 children: [
@@ -182,24 +185,21 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                         child: Text(
                           'Latest',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           'Max',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           'Average',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -209,14 +209,14 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                     children: [
                       Expanded(
                         child: Text(
-                          value.toStringAsFixed(1),
+                          latest.toStringAsFixed(1),
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 20),
                         ),
                       ),
                       Expanded(
                         child: Text(
-                          _maxValue.toStringAsFixed(1),
+                          max.toStringAsFixed(1),
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 20),
                         ),
@@ -233,10 +233,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                   const SizedBox(height: 8),
                   const Text(
                     'pound-force(s)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
+                    style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                   ),
                 ],
               );
@@ -248,7 +245,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
   }
 }
 
-/// ===== Semi-circle gauge painter (0–100 lbf) =====
+/// ===== Semi-circle gauge painter (0–150 lbf) =====
 class _BiteForceGaugePainter extends CustomPainter {
   final double value;
 
@@ -340,10 +337,10 @@ class _BiteForceGaugePainter extends CustomPainter {
       }
     }
 
-
     // ===== Needle =====
     final double clamped = (value.clamp(bfGaugeMin, bfGaugeMax)).toDouble();
-    final double normalized = (clamped - bfGaugeMin) / (bfGaugeMax - bfGaugeMin);
+    final double normalized =
+        (clamped - bfGaugeMin) / (bfGaugeMax - bfGaugeMin);
     final double angle = pi + normalized * pi;
 
     final needlePaint = Paint()

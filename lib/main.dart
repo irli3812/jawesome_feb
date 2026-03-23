@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'pages.dart';
 import 'widgets/bluetooth_button.dart';
@@ -19,10 +21,10 @@ const int minorDivisions = 12;
 const int majorDivisions = 2;
 
 /// Global Meter Gauge Limits RECORD BITE FORCE (BF)
-const double bfGaugeMin = -180.0;
-const double bfGaugeMax = 180.0;
-const int bfMinorDivisions = 12;
-const int bfMajorDivisions = 2;
+const double bfGaugeMin = 0.0;
+const double bfGaugeMax = 150.0;
+const int bfMinorDivisions = 15;
+const int bfMajorDivisions = 5;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -105,7 +107,7 @@ class _MyAppState extends State<MyApp> {
                           }
                         }
                         if (chosen != null) {
-                          SessionDataService().attachBleCharacteristic(chosen);
+                          SessionDataService().attachBleCharacteristics(chosen);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names, non_constant_identifier_names, unused_field
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -24,30 +26,42 @@ class SessionRow {
 /// Session data service (singleton)
 /// ─────────────────────────────────────────────
 class SessionDataService extends ChangeNotifier {
+
+// Hive keys
+static const _timeKey = 'time_series';
+
+static const _IOcurrentSeriesKey = 'mouth_opening_current_series';
+static const _IOavgSeriesKey = 'mouth_opening_avg_series';
+static const _IOmaxSeriesKey = 'mouth_opening_max_series';
+
+static const _biteCurrentSeriesKey = 'bite_forces_current_series';
+static const _biteAvgSeriesKey = 'bite_force_avg_series';
+static const _biteMaxSeriesKey = 'bite_force_max_series';
+
   // Singleton
   static final SessionDataService _instance =
       SessionDataService._internal();
   factory SessionDataService() => _instance;
   SessionDataService._internal();
 
-  // Hive storage
   final Box _box = Hive.box('appBox');
 
-  // BLE
-  BluetoothCharacteristic? _characteristic;
+  /// BLE
+  BluetoothCharacteristic? _dataCharacteristic;
+  //BluetoothCharacteristic? _commandCharacteristic;
+
   StreamSubscription<List<int>>? _bleSub;
 
-  // In-memory reference ONLY (never persisted)
   int? _firstDeviceMillis;
 
-  /// ─────────────────────────────────────────────
-  /// Session state
-  /// ─────────────────────────────────────────────
   bool get isRunning =>
       _box.get('is_recording', defaultValue: false) as bool;
 
-  int get elapsedMs =>
-      rows.isEmpty ? 0 : rows.last.elapsedMs;
+  int get elapsedMs {
+    final List times =
+        List.from(_box.get('time_series', defaultValue: []));
+    return times.isEmpty ? 0 : (times.last as num).toInt();
+  }
 
   List<SessionRow> get rows {
     final List raw =
@@ -56,7 +70,7 @@ class SessionDataService extends ChangeNotifier {
     return raw.map<SessionRow>((e) {
       return SessionRow(
         elapsedMs: (e['time_ms'] as num).toInt(),
-        biteForce: (e['bite_force'] as num).toInt(),
+        biteForce: ((e['avg_bite_force'] ?? 0) as num).toInt(),
         mouthOpening: (e['mouth_opening'] as num).toInt(),
       );
     }).toList(growable: false);
@@ -65,20 +79,26 @@ class SessionDataService extends ChangeNotifier {
   /// ─────────────────────────────────────────────
   /// BLE hookup
   /// ─────────────────────────────────────────────
-  void attachBleCharacteristic(BluetoothCharacteristic characteristic) {
-    debugPrint('🔵 BLE attached');
-    _characteristic = characteristic;
+  void attachBleCharacteristics(
+  BluetoothCharacteristic dataCharacteristic,
+  //BluetoothCharacteristic commandCharacteristic,
+) {
+  _dataCharacteristic = dataCharacteristic;
+  /*_commandCharacteristic = commandCharacteristic;*/
 
-    _bleSub?.cancel();
-    _bleSub =
-        characteristic.lastValueStream.listen(_onBleData);
+  debugPrint('🔵 BLE characteristics attached');
+  //debugPrint('DATA UUID: ${_dataCharacteristic?.uuid}');
+  /*debugPrint('CMD  UUID: ${_commandCharacteristic?.uuid}');*/
 
-    characteristic.setNotifyValue(true);
-  }
+  _bleSub?.cancel();
+
+  _bleSub = dataCharacteristic.lastValueStream.listen(_onBleData);
+
+  dataCharacteristic.setNotifyValue(true);
+}
 
   /// ─────────────────────────────────────────────
   /// BLE data handler
-  /// Payload format: "millis,angle"
   /// ─────────────────────────────────────────────
   void _onBleData(List<int> value) {
     if (!isRunning) return;
@@ -88,50 +108,118 @@ class SessionDataService extends ChangeNotifier {
     debugPrint('📥 decoded: $raw');
 
     final parts = raw.split(',');
-    if (parts.length != 2) return;
+    if (parts.length != 26) return;
 
     final int? deviceMillis = int.tryParse(parts[0]);
     final double? angle = double.tryParse(parts[1]);
+
     if (deviceMillis == null || angle == null) return;
 
-    // Capture first device millis ONCE per session
+    final List<double> bites = [];
+    for (int i = 2; i < 22; i++) {
+      final b = double.tryParse(parts[i]);
+      if (b == null) return;
+      bites.add(b);
+    }
+
+    final double? avgAngle = double.tryParse(parts[22]);
+    final double? maxAngle = double.tryParse(parts[23]);
+    final double? avgBite = double.tryParse(parts[24]);
+    final double? maxBite = double.tryParse(parts[25]);
+
+    if (avgAngle == null ||
+        maxAngle == null ||
+        avgBite == null ||
+        maxBite == null) {
+      return;
+    }
+
     _firstDeviceMillis ??= deviceMillis;
 
     final int elapsed = deviceMillis - _firstDeviceMillis!;
     if (elapsed < 0) return;
+
+    final List times =
+        List.from(_box.get(_timeKey, defaultValue: []));
+    times.add(elapsed);
+    _box.put(_timeKey, times);
+
+    final List IOcurrentSeries =
+        List.from(_box.get(_IOcurrentSeriesKey, defaultValue: []));
+    final List avgSeries =
+        List.from(_box.get(_IOavgSeriesKey, defaultValue: []));
+    final List maxSeries =
+        List.from(_box.get(_IOmaxSeriesKey, defaultValue: []));
+
+    IOcurrentSeries.add(angle);
+    avgSeries.add(avgAngle);
+    maxSeries.add(maxAngle);
+
+    _box.put(_IOcurrentSeriesKey, IOcurrentSeries);
+    _box.put(_IOavgSeriesKey, avgSeries);
+    _box.put(_IOmaxSeriesKey, maxSeries);
+
+    final List biteCurrentSeries =
+        List.from(_box.get(_biteCurrentSeriesKey, defaultValue: []));
+    final List avgBites =
+        List.from(_box.get(_biteAvgSeriesKey, defaultValue: []));
+    final List maxBites =
+        List.from(_box.get(_biteMaxSeriesKey, defaultValue: []));
+
+    biteCurrentSeries.add(bites);
+    avgBites.add(avgBite);
+    maxBites.add(maxBite);
+
+    _box.put(_biteCurrentSeriesKey, biteCurrentSeries);
+    _box.put(_biteAvgSeriesKey, avgBites);
+    _box.put(_biteMaxSeriesKey, maxBites);
 
     final List session =
         List.from(_box.get('session', defaultValue: []));
 
     session.add({
       'time_ms': elapsed,
-      'bite_force': angle.toInt(),
-      'mouth_opening': angle.toInt(),
+      'avg_bite_force': avgBite,
+      'max_bite_force': maxBite,
+      'mouth_opening': angle,
+      'avg_mouth_opening': avgAngle,
+      'max_mouth_opening': maxAngle,
+      'bites': List.from(bites),
     });
 
     _box.put('session', session);
 
-    // Update real-time display values in Hive
-    _box.put('bite_force_data', angle);
-    _box.put('interincisal_opening_data', angle);
-
     notifyListeners();
+
+    debugPrint("angle=$angle avgBite=$avgBite maxBite=$maxBite");
   }
 
   /// ─────────────────────────────────────────────
   /// Controls
   /// ─────────────────────────────────────────────
-  void start() {
+  Future<void> start() async {
     debugPrint('🟢 start() called');
-    debugPrint('BLE characteristic = $_characteristic');
 
-    if (_characteristic == null) {
-      debugPrint('❌ Cannot start — BLE not attached');
+    /*if (_commandCharacteristic == null) {
+      debugPrint('❌ Cannot start — command characteristic missing');
       return;
     }
 
+    await _commandCharacteristic!.write(
+      utf8.encode("RESET"),
+      withoutResponse: true,
+    );*/
+
     _firstDeviceMillis = null;
+    _box.put(_timeKey, []);
+    _box.put(_IOcurrentSeriesKey, []);
+    _box.put(_IOavgSeriesKey, []);
+    _box.put(_IOmaxSeriesKey, []);
+    _box.put(_biteCurrentSeriesKey, []);
+    _box.put(_biteAvgSeriesKey, []);
+    _box.put(_biteMaxSeriesKey, []);
     _box.put('session', []);
+
     _box.put('is_recording', true);
 
     notifyListeners();
@@ -144,7 +232,13 @@ class SessionDataService extends ChangeNotifier {
 
   void clear() {
     _firstDeviceMillis = null;
-    _box.delete('session');
+    _box.delete(_timeKey);
+    _box.delete(_IOcurrentSeriesKey);
+    _box.delete(_IOavgSeriesKey);
+    _box.delete(_IOmaxSeriesKey);
+    _box.delete(_biteCurrentSeriesKey);
+    _box.delete(_biteAvgSeriesKey);
+    _box.delete(_biteMaxSeriesKey);
     _box.put('is_recording', false);
     notifyListeners();
   }

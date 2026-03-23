@@ -1,5 +1,3 @@
-// REDO
-
 // ignore_for_file: unnecessary_underscores
 
 import 'dart:math';
@@ -22,12 +20,9 @@ class RecordMouthOpening extends StatefulWidget {
 }
 
 class _RecordMouthOpeningState extends State<RecordMouthOpening> {
-  double _maxValue = 0;
-  double _sum = 0;
-  int _count = 0;
 
-  int? _lastResetSignal;
-  int? _lastStartSignal;
+  /*int? _lastResetSignal;
+  int? _lastStartSignal;*/
   ViewMode _viewMode = ViewMode.meter;
 
   @override
@@ -76,9 +71,9 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
             child: _viewMode == ViewMode.meter
                 ? ValueListenableBuilder(
                     valueListenable: box.listenable(
-                        keys: ['interincisal_opening_data', 'resetSignal', 'startSignal']),
+                        keys: ['mouth_opening_current_series', 'mouth_opening_max_series', 'mouth_opening_avg_series', 'resetSignal', 'startSignal']),
                     builder: (context, _, __) {
-                      final int? resetSignal =
+                      /*final int? resetSignal =
                           box.get('resetSignal');
                       final int? startSignal =
                           box.get('startSignal');
@@ -86,24 +81,20 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                       if (resetSignal != null &&
                           resetSignal != _lastResetSignal) {
                         _lastResetSignal = resetSignal;
-                        _maxValue = 0;
-                        _sum = 0;
-                        _count = 0;
+                        maxValue = 0;
                       }
 
                       if (startSignal != null &&
                           startSignal != _lastStartSignal) {
                         _lastStartSignal = startSignal;
-                        _maxValue = 0;
-                        _sum = 0;
-                        _count = 0;
-                      }
+                        maxValue = 0;
+                      }*/
 
-                      final dynamic raw =
-                          box.get('interincisal_opening_data', defaultValue: 0);
+                      final List currentSeries =
+                          List.from(box.get('mouth_opening_current_series', defaultValue: []));
 
-                      final double value = (raw as num).toDouble();
-
+                      final double value =
+                          currentSeries.isEmpty ? 0 : (currentSeries.last as num).toDouble();
 
                       return SizedBox.expand(
                         child: CustomPaint(
@@ -122,9 +113,9 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
           // ===== METRICS =====
           ValueListenableBuilder(
             valueListenable:
-                box.listenable(keys: ['interincisal_opening_data', 'resetSignal', 'startSignal']),
+                box.listenable(keys: ['mouth_opening_current_series', 'mouth_opening_avg_series', 'mouth_opening_max_series', 'mouth_opening_max_series', 'resetSignal', 'startSignal']),
             builder: (context, _, __) {
-              final int? resetSignal =
+              /*final int? resetSignal =
                   box.get('resetSignal');
               final int? startSignal =
                   box.get('startSignal');
@@ -132,30 +123,29 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
               if (resetSignal != null &&
                   resetSignal != _lastResetSignal) {
                 _lastResetSignal = resetSignal;
-                _maxValue = 0;
-                _sum = 0;
-                _count = 0;
+                maxValue = 0;
               }
 
               if (startSignal != null &&
                   startSignal != _lastStartSignal) {
                 _lastStartSignal = startSignal;
-                _maxValue = 0;
-                _sum = 0;
-                _count = 0;
-              }
-              final dynamic raw =
-                  box.get('interincisal_opening_data', defaultValue: 0);
+                maxValue = 0;
+              }*/
+              final List currentSeries =
+                  List.from(box.get('mouth_opening_current_series', defaultValue: []));
+              final List avgSeries =
+                  List.from(box.get('mouth_opening_avg_series', defaultValue: []));
+              final List maxSeries =
+                  List.from(box.get('mouth_opening_max_series', defaultValue: []));
 
-              final double value = (raw as num).toDouble();
-
-
-              _count++;
-              _sum += value;
-              if (value > _maxValue) _maxValue = value;
+              final double value =
+                  currentSeries.isEmpty ? 0 : (currentSeries.last as num).toDouble();
 
               final double avg =
-                  _count == 0 ? 0 : _sum / _count;
+                  avgSeries.isEmpty ? 0 : (avgSeries.last as num).toDouble();
+
+              final double maxValue =
+                  maxSeries.isEmpty ? 0 : (maxSeries.last as num).toDouble();
 
               return Column(
                 children: [
@@ -199,7 +189,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                       ),
                       Expanded(
                         child: Text(
-                          '$_maxValue',
+                          '$maxValue',
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 20),
                         ),
