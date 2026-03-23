@@ -60,6 +60,13 @@ class _TsBiteForceState extends State<TsBiteForce> {
                   );
                 }),
               ),
+
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Close"),
+                ),
+              ]
             );
           },
         );
@@ -186,7 +193,6 @@ class _SimplePainter extends CustomPainter {
       return Offset(x, y);
     }
 
-    int i = 0;
 
     // Draw lines
     for (final entry in data.entries) {
@@ -210,7 +216,6 @@ class _SimplePainter extends CustomPainter {
       }
 
       canvas.drawPath(path, paint);
-      i++;
     }
 
     // ✅ Bottom-right legend
@@ -220,8 +225,6 @@ class _SimplePainter extends CustomPainter {
     final double xLineStart = size.width - 120;
     final double xLineEnd = size.width - 100;
     final double xText = size.width - 95;
-
-    i = 0;
 
     // Start from bottom and go UP
     double y = size.height - bottomPad;
@@ -244,7 +247,6 @@ class _SimplePainter extends CustomPainter {
       tp.paint(canvas, Offset(xText, y - 6));
 
       y -= rowHeight; // move UP each row
-      i++;
     }
   }
 
