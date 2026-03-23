@@ -24,56 +24,55 @@ class _TsBiteForceState extends State<TsBiteForce> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text("Select Sensor Pair(s)"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    children: List.generate(10, (i) {
-                      final s = i + 1;
-                      final color = _SimplePainter.colors[i];
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      children: List.generate(10, (i) {
+                        final s = i + 1;
+                        final color = _SimplePainter.colors[i];
 
-                      return FilterChip(
-                        label: Text("$s"),
-                        selected: selectedSensors.contains(s),
-                        selectedColor: color.withOpacity(0.6),
-                        backgroundColor: color.withOpacity(0.2),
-                        labelStyle: TextStyle(
-                          color: selectedSensors.contains(s)
-                              ? Colors.white
-                              : Colors.black,
-                          fontWeight: FontWeight.bold,
+                        return FilterChip(
+                          label: Text("$s"),
+                          selected: selectedSensors.contains(s),
+                          selectedColor: color.withOpacity(0.6),
+                          backgroundColor: color.withOpacity(0.2),
+                          labelStyle: TextStyle(
+                            color: selectedSensors.contains(s)
+                                ? Colors.white
+                                : Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          side: BorderSide(color: color, width: 2),
+                          onSelected: (_) {
+                            setState(() {
+                              if (selectedSensors.contains(s)) {
+                                selectedSensors.remove(s);
+                              } else {
+                                selectedSensors.add(s);
+                              }
+                            });
+                            setDialogState(() {});
+                          },
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Image.asset(
+                          'lib/images/teeth_anatomy_transparent_png.png',
+                          fit: BoxFit.contain,
                         ),
-                        side: BorderSide(color: color, width: 2),
-                        onSelected: (_) {
-                          setState(() {
-                            if (selectedSensors.contains(s)) {
-                              selectedSensors.remove(s);
-                            } else {
-                              selectedSensors.add(s);
-                            }
-                          });
-                          setDialogState(() {});
-                        },
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Image.asset(
-                        'lib/images/teeth_anatomy_transparent_png.png',
-                        fit: BoxFit.contain,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -91,91 +90,118 @@ class _TsBiteForceState extends State<TsBiteForce> {
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
 
-    return Stack(
+    return Column(
       children: [
-        ValueListenableBuilder(
-          valueListenable: box.listenable(keys: ['session']),
-          builder: (context, Box box, _) {
-            final List session = List.from(
-              box.get('session', defaultValue: []),
-            );
-
-            if (session.isEmpty) {
-              return const Center(child: Text("Waiting for data..."));
-            }
-
-            final Map<int, List<Offset>> sensorPoints = {
-              for (int i = 1; i <= 10; i++) i: [],
-            };
-
-            for (final row in session) {
-              final int time = (row['time_ms'] ?? 0) as int;
-
-              List bites = [];
-              if (row['bites'] != null) {
-                bites = List.from(row['bites']);
-              }
-
-              for (int s = 1; s <= 10; s++) {
-                double v1 = 0;
-                double v2 = 0;
-
-                if (bites.length > (s - 1)) {
-                  v1 = (bites[s - 1] as num).toDouble();
-                }
-
-                if (bites.length > (s + 9)) {
-                  v2 = (bites[s + 9] as num).toDouble();
-                }
-
-                final avg = (v1 + v2) / 2.0;
-                sensorPoints[s]!.add(Offset(time.toDouble(), avg));
-              }
-            }
-
-            final double latestTime = sensorPoints[1]!.isNotEmpty
-                ? sensorPoints[1]!.last.dx
-                : 0;
-
-            final double minTime = (latestTime - TsBiteForce.windowMs).clamp(
-              0,
-              double.infinity,
-            );
-
-            final Map<int, List<Offset>> filtered = {};
-
-            for (final s in selectedSensors) {
-              filtered[s] = sensorPoints[s]!
-                  .where((p) => p.dx >= minTime)
-                  .toList();
-            }
-
-            return CustomPaint(
-              painter: _SimplePainter(filtered, minTime, latestTime),
-              size: Size.infinite,
-            );
-          },
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton(
+              onPressed: _openSensorSelector,
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'lib/images/teeth_anatomy_transparent_png.png',
+                    height: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text("Select Sensor Pair(s)"),
+                ],
+              ),
+            ),
+          ),
         ),
+        Expanded(
+          child: ValueListenableBuilder(
+            valueListenable: box.listenable(keys: ['session']),
+            builder: (context, Box box, _) {
+              final List session =
+                  List.from(box.get('session', defaultValue: []));
 
-        Positioned(
-          top: 10,
-          right: 10,
-          child: ElevatedButton(
-            onPressed: _openSensorSelector,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.asset(
-                  'lib/images/teeth_anatomy_transparent_png.png',
-                  height: 24,
-                ),
-                const SizedBox(width: 8),
-                const Text("Select Sensor Pair(s)"),
-              ],
-            ),
+              if (session.isEmpty) {
+                return const Center(child: Text("Waiting for data..."));
+              }
+
+              final Map<int, List<Offset>> sensorPoints = {
+                for (int i = 1; i <= 10; i++) i: [],
+              };
+
+              for (final row in session) {
+                final int time = (row['time_ms'] ?? 0) as int;
+
+                List bites = [];
+                if (row['bites'] != null) {
+                  bites = List.from(row['bites']);
+                }
+
+                for (int s = 1; s <= 10; s++) {
+                  double v1 = 0;
+                  double v2 = 0;
+
+                  if (bites.length > (s - 1)) {
+                    v1 = (bites[s - 1] as num).toDouble();
+                  }
+
+                  if (bites.length > (s + 9)) {
+                    v2 = (bites[s + 9] as num).toDouble();
+                  }
+
+                  final avg = (v1 + v2) / 2.0;
+                  sensorPoints[s]!.add(Offset(time.toDouble(), avg));
+                }
+              }
+
+              final double latestTime = sensorPoints[1]!.isNotEmpty
+                  ? sensorPoints[1]!.last.dx
+                  : 0;
+
+              final double minTime =
+                  (latestTime - TsBiteForce.windowMs).clamp(0, double.infinity);
+
+              final Map<int, List<Offset>> filtered = {};
+
+              for (final s in selectedSensors) {
+                filtered[s] = sensorPoints[s]!
+                    .where((p) => p.dx >= minTime)
+                    .toList();
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: CustomPaint(
+                      painter:
+                          _SimplePainter(filtered, minTime, latestTime),
+                      size: Size.infinite,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 80,
+                    child: ListView(
+                      children: filtered.keys.map((s) {
+                        return Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 3,
+                              color: _SimplePainter.colors[(s - 1) %
+                                  _SimplePainter.colors.length],
+                            ),
+                            const SizedBox(width: 6),
+                            Text("$s"),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -191,35 +217,112 @@ class _SimplePainter extends CustomPainter {
   _SimplePainter(this.data, this.minTime, this.maxTime);
 
   static const List<Color> colors = [
-    Color(0xFF0072B2), // blue
-    Color(0xFFD55E00), // vermillion
-    Color(0xFF009E73), // green
-    Color(0xFFCC79A7), // purple
-    Color(0xFFE69F00), // orange
-    Color(0xFF56B4E9), // light blue
-    Color(0xFF000000), // black
-    Color(0xFFF0E442), // yellow
-    Color(0xFF999999), // gray
-    Color(0xFF882255), // dark red
+    Color(0xFF0072B2),
+    Color(0xFFD55E00),
+    Color(0xFF009E73),
+    Color(0xFFCC79A7),
+    Color(0xFFE69F00),
+    Color(0xFF56B4E9),
+    Color(0xFF000000),
+    Color(0xFFF0E442),
+    Color(0xFF999999),
+    Color(0xFF882255),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double width = size.width * 0.75;
-    final double height = size.height;
+    const double bottomPad = 30; // ✅ space for x-label
+    final double height = size.height - bottomPad;
 
-    const double leftPad = 10;
+    const double leftPad = 60;
+    final double width = size.width - leftPad - 10;
+
+    final bgPaint = Paint()..color = Colors.white;
+    canvas.drawRect(Offset.zero & size, bgPaint);
+
+    final axisPaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2;
+
+    canvas.drawLine(Offset(leftPad, 0), Offset(leftPad, height), axisPaint);
+    canvas.drawLine(
+        Offset(leftPad, height), Offset(size.width, height), axisPaint);
+
+    final timeRange =
+        (maxTime - minTime).abs() < 1 ? 1 : (maxTime - minTime);
+
+    // X ticks
+    const int xTicks = 5;
+    for (int i = 0; i <= xTicks; i++) {
+      final t = minTime + (i / xTicks) * timeRange;
+      final x = leftPad + (i / xTicks) * width;
+
+      canvas.drawLine(Offset(x, height), Offset(x, height - 5), axisPaint);
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: t.toStringAsFixed(0),
+          style: const TextStyle(fontSize: 10, color: Colors.black),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      tp.paint(canvas, Offset(x - 10, height + 2));
+    }
+
+    // Y ticks
+    const int yTicks = 5;
+    for (int i = 0; i <= yTicks; i++) {
+      final v =
+          bfGaugeMin + (i / yTicks) * (bfGaugeMax - bfGaugeMin);
+      final y = height - (i / yTicks) * height;
+
+      canvas.drawLine(Offset(leftPad, y), Offset(leftPad + 5, y), axisPaint);
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: v.toStringAsFixed(0),
+          style: const TextStyle(fontSize: 10, color: Colors.black),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      tp.paint(canvas, Offset(5, y - 6));
+    }
+
+    // X label BELOW axis
+    final xLabel = TextPainter(
+      text: const TextSpan(
+        text: "Time (units)",
+        style: TextStyle(color: Colors.black, fontSize: 12),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    xLabel.paint(canvas, Offset(leftPad + width / 2 - 40, height + 18));
+
+    // Y label
+    final yLabel = TextPainter(
+      text: const TextSpan(
+        text: "Average bite force of aligned sensors (Newtons)",
+        style: TextStyle(color: Colors.black, fontSize: 12),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    canvas.save();
+    canvas.translate(10, height / 2 + 50);
+    canvas.rotate(-3.14159 / 2);
+    yLabel.paint(canvas, Offset(0, 0));
+    canvas.restore();
 
     Offset scale(Offset p) {
-      final x = leftPad + ((p.dx - minTime) / (maxTime - minTime)) * width;
-
+      final x = leftPad + ((p.dx - minTime) / timeRange) * width;
       final y =
           height - ((p.dy - bfGaugeMin) / (bfGaugeMax - bfGaugeMin)) * height;
-
       return Offset(x, y);
     }
 
-    // Draw lines
     for (final entry in data.entries) {
       final s = entry.key;
 
@@ -241,37 +344,6 @@ class _SimplePainter extends CustomPainter {
       }
 
       canvas.drawPath(path, paint);
-    }
-
-    // ✅ Bottom-right legend
-    const double rowHeight = 18;
-    const double bottomPad = 10;
-
-    final double xLineStart = size.width - 120;
-    final double xLineEnd = size.width - 100;
-    final double xText = size.width - 95;
-
-    // Start from bottom and go UP
-    double y = size.height - bottomPad;
-
-    for (final s in data.keys.toList().reversed) {
-      final paint = Paint()
-        ..color = colors[(s - 1) % colors.length]
-        ..strokeWidth = 3;
-
-      canvas.drawLine(Offset(xLineStart, y), Offset(xLineEnd, y), paint);
-
-      final tp = TextPainter(
-        text: TextSpan(
-          text: "$s",
-          style: const TextStyle(fontSize: 12, color: Colors.black),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-
-      tp.paint(canvas, Offset(xText, y - 6));
-
-      y -= rowHeight; // move UP each row
     }
   }
 
