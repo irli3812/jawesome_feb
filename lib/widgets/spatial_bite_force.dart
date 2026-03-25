@@ -12,95 +12,105 @@ class SpatialBiteForce extends StatelessWidget {
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
 
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 12),
+
+            const Text(
+              'Colored Force-Map',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Expanded(
+              child: ValueListenableBuilder(
+                valueListenable: box.listenable(keys: ['session']),
+                builder: (context, Box box, _) {
+                  final List session = List.from(
+                    box.get('session', defaultValue: []),
+                  );
+
+                  final List<double> values = List.generate(20, (i) {
+                    if (session.isEmpty) return 0.0;
+
+                    final row = session.last;
+                    List bites = [];
+
+                    if (row['bites'] != null) {
+                      bites = List.from(row['bites']);
+                    }
+
+                    if (bites.length > i) {
+                      return (bites[i] as num).toDouble();
+                    }
+
+                    return 0.0;
+                  });
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildArch(values.sublist(0, 10), isTop: true),
+                      const SizedBox(height: 12),
+                      _buildLegend(context),
+                      const SizedBox(height: 12),
+                      _buildArch(values.sublist(10, 20), isTop: false),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegend(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 12),
-
-        const Text(
-          'Colored Force-Map',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+        Container(
+          height: 22,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              colors: [Colors.blue, Colors.orange, Colors.green],
+            ),
           ),
         ),
-
-        const SizedBox(height: 20),
-
-        ValueListenableBuilder(
-          valueListenable: box.listenable(keys: ['session']),
-          builder: (context, Box box, _) {
-            final List session = List.from(
-              box.get('session', defaultValue: []),
-            );
-
-            final List<double> values = List.generate(20, (i) {
-              if (session.isEmpty) return 0.0;
-
-              final row = session.last;
-              List bites = [];
-
-              if (row['bites'] != null) {
-                bites = List.from(row['bites']);
-              }
-
-              if (bites.length > i) {
-                return (bites[i] as num).toDouble();
-              }
-
-              return 0.0;
-            });
-
-            return Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildArch(values.sublist(0, 10), isTop: true),
-                  _buildArch(values.sublist(10, 20), isTop: false),
-                ],
-              ),
-            );
-          },
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          runAlignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 4,
+          children: [
+            Text(
+              bfGaugeMin.toStringAsFixed(0),
+              style: const TextStyle(fontSize: 18),
+            ),
+            Text(
+              ((bfGaugeMin + bfGaugeMax) / 2).toStringAsFixed(0),
+              style: const TextStyle(fontSize: 18),
+            ),
+            Text(
+              '${bfGaugeMax.toStringAsFixed(0)} N',
+              style: const TextStyle(fontSize: 18),
+            ),
+          ],
         ),
-
-        const SizedBox(height: 12),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            children: [
-              Container(
-                height: 22,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: const LinearGradient(
-                    colors: [Colors.blue, Colors.orange, Colors.green],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    bfGaugeMin.toStringAsFixed(0),
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  Text(
-                    ((bfGaugeMin + bfGaugeMax) / 2).toStringAsFixed(0),
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  Text(
-                    '${bfGaugeMax.toStringAsFixed(0)} N',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 12),
       ],
     );
   }

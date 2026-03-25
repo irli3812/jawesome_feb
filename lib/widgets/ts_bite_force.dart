@@ -180,152 +180,161 @@ class _TsBiteForceState extends State<TsBiteForce> {
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton(
-              onPressed: _openSensorSelector,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'lib/images/teeth_anatomy_transparent_png.png',
-                    height: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "Select Sensor Region(s)",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        ValueListenableBuilder(
-          valueListenable: box.listenable(keys: ['session']),
-          builder: (context, Box box, _) {
-            final Set<int> activeSensors = selectedSensors;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Align(
                 alignment: Alignment.centerRight,
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: activeSensors.map((s) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 20,
-                          height: 3,
-                          color: _SimplePainter.colors[s],
+                child: ElevatedButton(
+                  onPressed: _openSensorSelector,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'lib/images/teeth_anatomy_transparent_png.png',
+                        height: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Select Sensor Region(s)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          regionLabels[s],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+            ValueListenableBuilder(
+              valueListenable: box.listenable(keys: ['session']),
+              builder: (context, Box box, _) {
+                final Set<int> activeSensors = selectedSensors;
 
-        const SizedBox(height: 12), // ✅ space between legend and plot
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 12,
+                      runSpacing: 4,
+                      children: activeSensors.map((s) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 3,
+                              color: _SimplePainter.colors[s],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              regionLabels[s],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
+            ),
 
-        Expanded(
-          child: ValueListenableBuilder(
-            valueListenable: box.listenable(keys: ['session']),
-            builder: (context, Box box, _) {
-              final List session = List.from(
-                box.get('session', defaultValue: []),
-              );
+            const SizedBox(height: 12), // ✅ space between legend and plot
 
-              final Map<int, List<Offset>> sensorPoints = {
-                for (int i = 0; i < 4; i++) i: [],
-              };
+            Expanded(
+              child: ValueListenableBuilder(
+                valueListenable: box.listenable(keys: ['session']),
+                builder: (context, Box box, _) {
+                  final List session = List.from(
+                    box.get('session', defaultValue: []),
+                  );
 
-              for (final row in session) {
-                final int time = (row['time_ms'] ?? 0) as int;
+                  final Map<int, List<Offset>> sensorPoints = {
+                    for (int i = 0; i < 4; i++) i: [],
+                  };
 
-                List bites = [];
-                if (row['bites'] != null) {
-                  bites = List.from(row['bites']);
-                }
+                  for (final row in session) {
+                    final int time = (row['time_ms'] ?? 0) as int;
 
-                final groups = [
-                  [0, 1, 2, 3], // 1-4
-                  [4, 5, 6, 7], // 5-8
-                  [12, 13, 14, 15], // 13-16
-                  [16, 17, 18, 19], // 17-20
-                ];
+                    List bites = [];
+                    if (row['bites'] != null) {
+                      bites = List.from(row['bites']);
+                    }
 
-                for (int g = 0; g < 4; g++) {
-                  double sum = 0;
-                  int count = 0;
+                    final groups = [
+                      [0, 1, 2, 3], // 1-4
+                      [4, 5, 6, 7], // 5-8
+                      [12, 13, 14, 15], // 13-16
+                      [16, 17, 18, 19], // 17-20
+                    ];
 
-                  for (final idx in groups[g]) {
-                    if (bites.length > idx) {
-                      sum += (bites[idx] as num).toDouble();
-                      count++;
+                    for (int g = 0; g < 4; g++) {
+                      double sum = 0;
+                      int count = 0;
+
+                      for (final idx in groups[g]) {
+                        if (bites.length > idx) {
+                          sum += (bites[idx] as num).toDouble();
+                          count++;
+                        }
+                      }
+
+                      final avg = count == 0 ? 0.0 : sum / count;
+                      sensorPoints[g]!.add(Offset(time.toDouble(), avg));
                     }
                   }
 
-                  final avg = count == 0 ? 0.0 : sum / count;
-                  sensorPoints[g]!.add(Offset(time.toDouble(), avg));
-                }
-              }
+                  final double latestTime =
+                      sensorPoints.values.expand((list) => list).isNotEmpty
+                      ? sensorPoints.values
+                            .expand((list) => list)
+                            .map((p) => p.dx)
+                            .reduce((a, b) => a > b ? a : b)
+                      : 0;
 
-              final double latestTime = sensorPoints.values
-                  .expand((list) => list)
-                  .isNotEmpty
-                  ? sensorPoints.values
-                      .expand((list) => list)
-                      .map((p) => p.dx)
-                      .reduce((a, b) => a > b ? a : b)
-                  : 0;
+                  final double minTime = (latestTime - TsBiteForce.windowMs)
+                      .clamp(0, double.infinity);
 
-              final double minTime = (latestTime - TsBiteForce.windowMs).clamp(
-                0,
-                double.infinity,
-              );
+                  final Map<int, List<Offset>> filtered = {};
 
-              final Map<int, List<Offset>> filtered = {};
+                  for (final s in selectedSensors) {
+                    filtered[s] = sensorPoints[s]!
+                        .where((p) => p.dx >= minTime)
+                        .toList();
+                  }
 
-              for (final s in selectedSensors) {
-                filtered[s] = sensorPoints[s]!
-                    .where((p) => p.dx >= minTime)
-                    .toList();
-              }
-
-              return CustomPaint(
-                painter: _SimplePainter(filtered, minTime, latestTime),
-                size: Size.infinite,
-              );
-            },
-          ),
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return CustomPaint(
+                        painter: _SimplePainter(filtered, minTime, latestTime),
+                        size: constraints.biggest,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

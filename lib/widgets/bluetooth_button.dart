@@ -120,35 +120,36 @@ class _DeviceSelectionDialogState extends State<DeviceSelectionDialog> {
   }
 
   Future<bool> _ensurePermissions() async {
-    final List<Permission> requestList = [];
-
     if (Platform.isIOS) {
-      requestList.addAll([
-        Permission.bluetooth,
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-      ]);
+      final status = await Permission.bluetooth.status;
+      if (!status.isGranted) {
+        final requestStatus = await Permission.bluetooth.request();
+        if (!requestStatus.isGranted) {
+          setState(() {
+            _errorMessage =
+                'Please grant Bluetooth permissions in device Settings.';
+          });
+          return false;
+        }
+      }
+      return true;
     }
 
     if (Platform.isAndroid) {
-      requestList.addAll([
+      final statuses = await [
         Permission.bluetoothScan,
         Permission.bluetoothConnect,
-        Permission.locationWhenInUse,
-      ]);
-    }
+      ].request();
 
-    if (requestList.isEmpty) return true;
-
-    final statuses = await requestList.request();
-
-    final denied = statuses.entries.where((entry) => !entry.value.isGranted);
-    if (denied.isNotEmpty) {
-      setState(() {
-        _errorMessage =
-            'Please grant Bluetooth permissions in device Settings.';
-      });
-      return false;
+      final denied = statuses.entries.where((entry) => !entry.value.isGranted);
+      if (denied.isNotEmpty) {
+        setState(() {
+          _errorMessage =
+              'Please grant Bluetooth permissions in device Settings.';
+        });
+        return false;
+      }
+      return true;
     }
 
     return true;

@@ -18,70 +18,75 @@ class _TsMouthOpeningState extends State<TsMouthOpening> {
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
 
-    return Column(
-      children: [
-        const SizedBox(height: 12),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 12),
 
-        const Text(
-          "Mouth Opening (Current)",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        Expanded(
-          child: ValueListenableBuilder(
-            valueListenable: box.listenable(
-              keys: [
-                'time_series',
-                'mouth_opening_current_series',
-              ],
+            const Text(
+              "Mouth Opening (Current)",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            builder: (context, Box box, _) {
-              final List times = List.from(
-                box.get('time_series', defaultValue: []),
-              );
 
-              final List values = List.from(
-                box.get('mouth_opening_current_series', defaultValue: []),
-              );
+            const SizedBox(height: 12),
 
-              final List<Offset> points = [];
-
-              for (int i = 0; i < times.length && i < values.length; i++) {
-                points.add(
-                  Offset(
-                    (times[i] as num).toDouble(),
-                    (values[i] as num).toDouble(),
-                  ),
-                );
-              }
-
-              final double latestTime = points.isNotEmpty ? points.last.dx : 0;
-
-              final double minTime = (latestTime -
-                      TsMouthOpening.windowMs)
-                  .clamp(0, double.infinity);
-
-              final filtered = points
-                  .where((p) => p.dx >= minTime)
-                  .toList();
-
-              return CustomPaint(
-                painter: _MouthOpeningPainter(
-                  filtered,
-                  minTime,
-                  latestTime,
+            Expanded(
+              child: ValueListenableBuilder(
+                valueListenable: box.listenable(
+                  keys: ['time_series', 'mouth_opening_current_series'],
                 ),
-                size: Size.infinite,
-              );
-            },
-          ),
+                builder: (context, Box box, _) {
+                  final List times = List.from(
+                    box.get('time_series', defaultValue: []),
+                  );
+
+                  final List values = List.from(
+                    box.get('mouth_opening_current_series', defaultValue: []),
+                  );
+
+                  final List<Offset> points = [];
+
+                  for (int i = 0; i < times.length && i < values.length; i++) {
+                    points.add(
+                      Offset(
+                        (times[i] as num).toDouble(),
+                        (values[i] as num).toDouble(),
+                      ),
+                    );
+                  }
+
+                  final double latestTime = points.isNotEmpty
+                      ? points.last.dx
+                      : 0;
+
+                  final double minTime = (latestTime - TsMouthOpening.windowMs)
+                      .clamp(0, double.infinity);
+
+                  final filtered = points
+                      .where((p) => p.dx >= minTime)
+                      .toList();
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return CustomPaint(
+                        painter: _MouthOpeningPainter(
+                          filtered,
+                          minTime,
+                          latestTime,
+                        ),
+                        size: constraints.biggest,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -91,11 +96,7 @@ class _MouthOpeningPainter extends CustomPainter {
   final double minTime;
   final double maxTime;
 
-  _MouthOpeningPainter(
-    this.data,
-    this.minTime,
-    this.maxTime,
-  );
+  _MouthOpeningPainter(this.data, this.minTime, this.maxTime);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -112,11 +113,7 @@ class _MouthOpeningPainter extends CustomPainter {
       ..color = Colors.black
       ..strokeWidth = 2;
 
-    canvas.drawLine(
-      Offset(leftPad, 0),
-      Offset(leftPad, height),
-      axisPaint,
-    );
+    canvas.drawLine(Offset(leftPad, 0), Offset(leftPad, height), axisPaint);
 
     canvas.drawLine(
       Offset(leftPad, height),
@@ -124,29 +121,19 @@ class _MouthOpeningPainter extends CustomPainter {
       axisPaint,
     );
 
-    final timeRange =
-        (maxTime - minTime).abs() < 1
-            ? 1
-            : (maxTime - minTime);
+    final timeRange = (maxTime - minTime).abs() < 1 ? 1 : (maxTime - minTime);
 
     const int xTicks = 5;
     for (int i = 0; i <= xTicks; i++) {
       final t = minTime + (i / xTicks) * timeRange;
       final x = leftPad + (i / xTicks) * width;
 
-      canvas.drawLine(
-        Offset(x, height),
-        Offset(x, height - 5),
-        axisPaint,
-      );
+      canvas.drawLine(Offset(x, height), Offset(x, height - 5), axisPaint);
 
       final tp = TextPainter(
         text: TextSpan(
           text: (t / 1000).toStringAsFixed(3),
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-          ),
+          style: const TextStyle(fontSize: 16, color: Colors.black),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -160,24 +147,16 @@ class _MouthOpeningPainter extends CustomPainter {
 
     const int yTicks = 5;
     for (int i = 0; i <= yTicks; i++) {
-      final v = gaugeMin +
-          (i / yTicks) * (gaugeMax - gaugeMin);
+      final v = gaugeMin + (i / yTicks) * (gaugeMax - gaugeMin);
 
       final y = height - (i / yTicks) * height;
 
-      canvas.drawLine(
-        Offset(leftPad, y),
-        Offset(leftPad + 5, y),
-        axisPaint,
-      );
+      canvas.drawLine(Offset(leftPad, y), Offset(leftPad + 5, y), axisPaint);
 
       final tp = TextPainter(
         text: TextSpan(
           text: v.toStringAsFixed(0),
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-          ),
+          style: const TextStyle(fontSize: 16, color: Colors.black),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -197,10 +176,7 @@ class _MouthOpeningPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    xLabel.paint(
-      canvas,
-      Offset(leftPad + width / 2 - 60, height + 40),
-    );
+    xLabel.paint(canvas, Offset(leftPad + width / 2 - 60, height + 40));
 
     final yLabel = TextPainter(
       text: const TextSpan(
@@ -218,23 +194,14 @@ class _MouthOpeningPainter extends CustomPainter {
     canvas.translate(10, height / 2);
     canvas.rotate(-3.14159 / 2);
 
-    yLabel.paint(
-      canvas,
-      Offset(-yLabel.width / 2, 0),
-    );
+    yLabel.paint(canvas, Offset(-yLabel.width / 2, 0));
 
     canvas.restore();
 
     Offset scale(Offset p) {
-      final x =
-          leftPad +
-          ((p.dx - minTime) / timeRange) * width;
+      final x = leftPad + ((p.dx - minTime) / timeRange) * width;
 
-      final y =
-          height -
-          ((p.dy - gaugeMin) /
-                  (gaugeMax - gaugeMin)) *
-              height;
+      final y = height - ((p.dy - gaugeMin) / (gaugeMax - gaugeMin)) * height;
 
       return Offset(x, y);
     }
@@ -260,8 +227,5 @@ class _MouthOpeningPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) =>
-      true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
