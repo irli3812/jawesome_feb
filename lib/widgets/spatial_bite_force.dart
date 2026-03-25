@@ -55,10 +55,7 @@ class SpatialBiteForce extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // ===== TOP ARCH (1–10) =====
                   _buildArch(values.sublist(0, 10), isTop: true),
-
-                  // ===== BOTTOM ARCH (11–20) =====
                   _buildArch(values.sublist(10, 20), isTop: false),
                 ],
               ),
@@ -68,7 +65,6 @@ class SpatialBiteForce extends StatelessWidget {
 
         const SizedBox(height: 12),
 
-        // ===== COLOR LEGEND =====
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -109,29 +105,30 @@ class SpatialBiteForce extends StatelessWidget {
     );
   }
 
-  // ===== ARCH BUILDER (ELLIPTICAL DENTAL ARCH) =====
+  // ===== ARCH BUILDER (ELLIPTICAL TOUCHING BOXES - NO OVERLAP) =====
   Widget _buildArch(List<double> vals, {required bool isTop}) {
-    const double radiusX = 230; // horizontal width
-    const double radiusY = 80;  // vertical height (flatter like teeth)
+    const double radiusY = 70; // flatter curve
     const double boxWidth = 55;
     const double boxHeight = 85;
+    const double spacing = 2; // small gap prevents overlap
 
     return SizedBox(
       height: radiusY + boxHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final centerX = constraints.maxWidth / 2;
+          final totalWidth = vals.length * (boxWidth + spacing);
+          final startX = (constraints.maxWidth - totalWidth) / 2;
 
           return Stack(
             children: List.generate(vals.length, (i) {
-              final angle = pi * (i / (vals.length - 1));
+              final x = startX + i * (boxWidth + spacing);
 
-              final x =
-                  centerX + (cos(angle - pi) * radiusX) - (boxWidth / 2);
+              final centerX = constraints.maxWidth / 2;
+              final dx = (x + boxWidth / 2 - centerX) / (totalWidth / 2);
 
-              final y = isTop
-                  ? (radiusY - sin(angle) * radiusY)
-                  : (sin(angle) * radiusY);
+              final ellipseY = sqrt(max(0, 1 - dx * dx)) * radiusY;
+
+              final y = isTop ? radiusY - ellipseY : ellipseY;
 
               return Positioned(
                 left: x,
@@ -204,8 +201,10 @@ class SpatialBiteForce extends StatelessWidget {
 
   // ===== COLOR SCALE =====
   Color _valueToColor(double value) {
-    final normalized =
-        ((value - bfGaugeMin) / (bfGaugeMax - bfGaugeMin)).clamp(0.0, 1.0);
+    final normalized = ((value - bfGaugeMin) / (bfGaugeMax - bfGaugeMin)).clamp(
+      0.0,
+      1.0,
+    );
 
     if (normalized < 0.5) {
       final t = normalized / 0.5;

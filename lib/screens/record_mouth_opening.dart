@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
+import '../widgets/ts_mouth_opening.dart';
 
 enum ViewMode { meter, timeseries }
 
@@ -103,9 +104,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                       );
                     },
                   )
-                : const Center(
-                    child: Text('Time series view coming soon'),
-                  ),
+                : const TsMouthOpening(),
           ),
 
           const SizedBox(height: 16),
