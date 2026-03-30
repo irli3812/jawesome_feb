@@ -38,6 +38,8 @@ static const _biteCurrentSeriesKey = 'bite_forces_current_series';
 static const _biteAvgSeriesKey = 'bite_force_avg_series';
 static const _biteMaxSeriesKey = 'bite_force_max_series';
 
+static const _batteryKey = 'batteryPercent';
+
   // Singleton
   static final SessionDataService _instance =
       SessionDataService._internal();
@@ -108,7 +110,7 @@ static const _biteMaxSeriesKey = 'bite_force_max_series';
     debugPrint('📥 decoded: $raw');
 
     final parts = raw.split(',');
-    if (parts.length != 26) return;
+    if (parts.length != 27) return;
 
     final int? deviceMillis = int.tryParse(parts[0]);
     final double? angle = double.tryParse(parts[1]);
@@ -126,11 +128,13 @@ static const _biteMaxSeriesKey = 'bite_force_max_series';
     final double? maxAngle = double.tryParse(parts[23]);
     final double? avgBite = double.tryParse(parts[24]);
     final double? maxBite = double.tryParse(parts[25]);
+    final double? battery = double.tryParse(parts[26]);
 
     if (avgAngle == null ||
         maxAngle == null ||
         avgBite == null ||
-        maxBite == null) {
+        maxBite == null ||
+        battery == null) {
       return;
     }
 
@@ -184,10 +188,12 @@ static const _biteMaxSeriesKey = 'bite_force_max_series';
       'mouth_opening': angle,
       'avg_mouth_opening': avgAngle,
       'max_mouth_opening': maxAngle,
+      'battery': battery,
       'bites': List.from(bites),
     });
 
     _box.put('session', session);
+    _box.put(_batteryKey, battery);
 
     notifyListeners();
 

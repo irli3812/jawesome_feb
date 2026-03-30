@@ -481,5 +481,9 @@ class _SimplePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _SimplePainter oldDelegate) {
+    return oldDelegate.data != data ||
+        oldDelegate.minTime != minTime ||
+        oldDelegate.maxTime != maxTime;
+  }
 }

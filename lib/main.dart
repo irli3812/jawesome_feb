@@ -47,6 +47,55 @@ Widget getPlatformWidget() {
   );
 }
 
+class BatteryStatus extends StatelessWidget {
+  const BatteryStatus({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final box = Hive.box('appBox');
+
+    return ValueListenableBuilder(
+      valueListenable: box.listenable(keys: ['batteryPercent']),
+      builder: (context, Box box, _) {
+        final double battery =
+            (box.get('batteryPercent', defaultValue: 100.0) as num).toDouble();
+
+        IconData icon;
+
+        if (battery > 75) {
+          icon = Icons.battery_full;
+        } else if (battery > 50) {
+          icon = Icons.battery_5_bar;
+        } else if (battery > 25) {
+          icon = Icons.battery_3_bar;
+        } else {
+          icon = Icons.battery_1_bar;
+        }
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: Colors.black, // contrast
+            ),
+            const SizedBox(width: 4),
+            Text(
+              "${battery.toStringAsFixed(0)}%",
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black, // contrast
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -58,9 +107,9 @@ class _MyAppState extends State<MyApp> {
   bool isBluetoothConnected = false;
 
   @override
-  Widget build(BuildContext context) { 
+  Widget build(BuildContext context) {
     return MaterialApp(
-      //debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: false,
       title: 'OraStretch Tech',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
@@ -68,86 +117,100 @@ class _MyAppState extends State<MyApp> {
       ),
       home: Scaffold(
         appBar: AppBar(
-            title: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                        const Text(
-                          'OraStretch Tech', 
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
-                        ),
-                        getPlatformWidget(),
-                      ],
-                  ),
+          title: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'OraStretch Tech',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
+                    ),
+                    getPlatformWidget(),
+                  ],
                 ),
-                Expanded(
-                  flex: 1,
-                  child: BluetoothButton(
-                    isConnected: isBluetoothConnected,
-                    onConnectionChange: (isConnected) {
-                      setState(() {
-                        isBluetoothConnected = isConnected;
-                      });
-                    },
-                    onDeviceSelected: (device) async {
-                      if (device == null) return;
-                      try {
-                        final services = await device.discoverServices();
-                        BluetoothCharacteristic? chosen;
-                        for (final s in services) {
-                          for (final c in s.characteristics) {
-                            if (c.properties.notify) {
-                              chosen = c;
-                              break;
-                            }
-                          }
-                          if (chosen != null) break;
-                        }
-                        if (chosen == null) {
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const BatteryStatus(),
+                  const SizedBox(width: 8),
+                  Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(8),
+                    child: BluetoothButton(
+                      isConnected: isBluetoothConnected,
+                      onConnectionChange: (isConnected) {
+                        setState(() {
+                          isBluetoothConnected = isConnected;
+                        });
+                      },
+                      onDeviceSelected: (device) async {
+                        if (device == null) return;
+                        try {
+                          final services = await device.discoverServices();
+                          BluetoothCharacteristic? chosen;
                           for (final s in services) {
-                            if (s.characteristics.isNotEmpty) {
-                              chosen = s.characteristics.first;
-                              break;
+                            for (final c in s.characteristics) {
+                              if (c.properties.notify) {
+                                chosen = c;
+                                break;
+                              }
+                            }
+                            if (chosen != null) break;
+                          }
+                          if (chosen == null) {
+                            for (final s in services) {
+                              if (s.characteristics.isNotEmpty) {
+                                chosen = s.characteristics.first;
+                                break;
+                              }
                             }
                           }
-                        }
-                        if (chosen != null) {
-                          SessionDataService().attachBleCharacteristics(chosen);
-                        } else {
+                          if (chosen != null) {
+                            SessionDataService().attachBleCharacteristics(
+                              chosen,
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'No notifiable characteristic found on device.',
+                                ),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('No notifiable characteristic found on device.'),
-                              duration: Duration(seconds: 3),
+                            SnackBar(
+                              content: Text(
+                                'Error discovering characteristics: ${e.toString()}',
+                              ),
+                              duration: const Duration(seconds: 3),
                             ),
                           );
                         }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error discovering characteristics: ${e.toString()}'),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    },
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.blue,
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(16),
-              child: Container(),
-            )
+                ],
+              ),
+            ],
           ),
+          backgroundColor: Colors.blue,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(16),
+            child: Container(),
+          ),
+        ),
         body: MyPage(isBluetoothConnected: isBluetoothConnected),
       ),
     );
@@ -159,11 +222,7 @@ class PageItem {
   final String title;
   final Widget Function() builder;
 
-  PageItem({
-    required this.id,
-    required this.title,
-    required this.builder,
-  });
+  PageItem({required this.id, required this.title, required this.builder});
 }
 
 class PageNavigation extends StatefulWidget {
@@ -190,9 +249,7 @@ class _PageNavigationState extends State<PageNavigation> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFBFDBFE)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFBFDBFE))),
       ),
       child: SingleChildScrollView(
         controller: _scrollController,
@@ -204,7 +261,10 @@ class _PageNavigationState extends State<PageNavigation> {
             return TextButton(
               onPressed: () => widget.onPageChange(index),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 backgroundColor: isActive
                     ? const Color(0xFFEFF6FF)
                     : Colors.transparent,

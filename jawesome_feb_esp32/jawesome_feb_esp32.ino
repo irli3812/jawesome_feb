@@ -52,7 +52,7 @@ float batteryPercent = 100.0;
 unsigned long lastBatteryDrop = 0;
 
 const unsigned long BATTERY_DROP_INTERVAL = 30000;  // 30 seconds
-const float BATTERY_DROP_AMOUNT = 0.05;             // slow drain
+const float BATTERY_DROP_AMOUNT = 0.10;             // slow drain
 
 
 // --- 5. CALLBACK CLASS FOR CONNECTION HANDLING ---

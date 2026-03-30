@@ -61,13 +61,11 @@ class SpatialBiteForce extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildArch(values.sublist(0, 10), isTop: true),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6),
                       _buildLegend(context),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6),
                       _buildArch(values.sublist(10, 20), isTop: false),
-                      const SizedBox(
-                        height: 24,
-                      ), // Extra padding to prevent overlap with metrics
+                      const SizedBox(height: 16),
                     ],
                   );
                 },
