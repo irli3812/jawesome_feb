@@ -65,6 +65,9 @@ class SpatialBiteForce extends StatelessWidget {
                       _buildLegend(context),
                       const SizedBox(height: 12),
                       _buildArch(values.sublist(10, 20), isTop: false),
+                      const SizedBox(
+                        height: 24,
+                      ), // Extra padding to prevent overlap with metrics
                     ],
                   );
                 },
@@ -123,22 +126,34 @@ class SpatialBiteForce extends StatelessWidget {
         final availableWidth = constraints.maxWidth;
         final boxWidth = (availableWidth / vals.length).clamp(40.0, 65.0);
         final boxHeight = boxWidth * 1.55; // maintain aspect ratio
-        final spacing = max(1.0, boxWidth * 0.03); // scale spacing proportionally
-        final radiusY = boxHeight * 0.82; // scale curve height proportionally
+        final spacing = max(
+          1.0,
+          boxWidth * 0.03,
+        ); // scale spacing proportionally
 
-        return SizedBox(
-          height: radiusY + boxHeight,
-          child: LayoutBuilder(
-            builder: (context, innerConstraints) {
-              final totalWidth = vals.length * (boxWidth + spacing);
-              final startX = (innerConstraints.maxWidth - totalWidth) / 2;
+        return LayoutBuilder(
+          builder: (context, innerConstraints) {
+            final totalWidth = vals.length * (boxWidth + spacing);
 
-              return Stack(
+            // Calculate radius to fit boxes without hanging off edges
+            // Account for half box width on each edge
+            final maxHalfWidth = totalWidth / 2;
+            final maxHalfHeight = innerConstraints.maxHeight / 2;
+
+            // Calculate radius Y to create a smooth ellipse that contains all boxes
+            // Use a more rounded curve (larger radius) by increasing the factor
+            final radiusY = (boxHeight * 1.2).clamp(80.0, maxHalfHeight * 0.9);
+
+            final startX = (innerConstraints.maxWidth - totalWidth) / 2;
+
+            return SizedBox(
+              height: radiusY + boxHeight,
+              child: Stack(
                 children: List.generate(vals.length, (i) {
                   final x = startX + i * (boxWidth + spacing);
 
                   final centerX = innerConstraints.maxWidth / 2;
-                  final dx = (x + boxWidth / 2 - centerX) / (totalWidth / 2);
+                  final dx = (x + boxWidth / 2 - centerX) / (maxHalfWidth);
 
                   final ellipseY = sqrt(max(0, 1 - dx * dx)) * radiusY;
 
@@ -150,15 +165,22 @@ class SpatialBiteForce extends StatelessWidget {
                     child: _buildBox(i, vals[i], isTop, boxWidth, boxHeight),
                   );
                 }),
-              );
-            },
-          ),);
-        },
-      );
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   // ===== SINGLE SENSOR BOX =====
-  Widget _buildBox(int index, double value, bool isTop, double boxWidth, double boxHeight) {
+  Widget _buildBox(
+    int index,
+    double value,
+    bool isTop,
+    double boxWidth,
+    double boxHeight,
+  ) {
     final sensorNumber = isTop ? index + 1 : index + 11;
 
     final color = _valueToColor(value);
@@ -182,6 +204,7 @@ class SpatialBiteForce extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '$sensorNumber',
@@ -189,27 +212,29 @@ class SpatialBiteForce extends StatelessWidget {
                   fontSize: sensorFontSize,
                   fontWeight: FontWeight.bold,
                   color: textColor,
+                  height: 0.9,
+                  leadingDistribution: TextLeadingDistribution.even,
                 ),
               ),
-
-              const SizedBox(height: 4),
-
+              const SizedBox(height: 1),
               Text(
                 value.toStringAsFixed(0),
                 style: TextStyle(
                   fontSize: valueFontSize,
                   fontWeight: FontWeight.bold,
                   color: textColor,
+                  height: 0.9,
+                  leadingDistribution: TextLeadingDistribution.even,
                 ),
               ),
-
-              const SizedBox(height: 2),
-
+              const SizedBox(height: 0),
               Text(
                 'N',
                 style: TextStyle(
                   fontSize: unitFontSize,
                   color: textColor.withOpacity(0.85),
+                  height: 0.9,
+                  leadingDistribution: TextLeadingDistribution.even,
                 ),
               ),
             ],
