@@ -117,55 +117,65 @@ class SpatialBiteForce extends StatelessWidget {
 
   // ===== ARCH BUILDER (ELLIPTICAL TOUCHING BOXES - NO OVERLAP) =====
   Widget _buildArch(List<double> vals, {required bool isTop}) {
-    const double radiusY = 70; // flatter curve
-    const double boxWidth = 55;
-    const double boxHeight = 85;
-    const double spacing = 2; // small gap prevents overlap
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsive sizing based on available width
+        final availableWidth = constraints.maxWidth;
+        final boxWidth = (availableWidth / vals.length).clamp(40.0, 65.0);
+        final boxHeight = boxWidth * 1.55; // maintain aspect ratio
+        final spacing = max(1.0, boxWidth * 0.03); // scale spacing proportionally
+        final radiusY = boxHeight * 0.82; // scale curve height proportionally
 
-    return SizedBox(
-      height: radiusY + boxHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final totalWidth = vals.length * (boxWidth + spacing);
-          final startX = (constraints.maxWidth - totalWidth) / 2;
+        return SizedBox(
+          height: radiusY + boxHeight,
+          child: LayoutBuilder(
+            builder: (context, innerConstraints) {
+              final totalWidth = vals.length * (boxWidth + spacing);
+              final startX = (innerConstraints.maxWidth - totalWidth) / 2;
 
-          return Stack(
-            children: List.generate(vals.length, (i) {
-              final x = startX + i * (boxWidth + spacing);
+              return Stack(
+                children: List.generate(vals.length, (i) {
+                  final x = startX + i * (boxWidth + spacing);
 
-              final centerX = constraints.maxWidth / 2;
-              final dx = (x + boxWidth / 2 - centerX) / (totalWidth / 2);
+                  final centerX = innerConstraints.maxWidth / 2;
+                  final dx = (x + boxWidth / 2 - centerX) / (totalWidth / 2);
 
-              final ellipseY = sqrt(max(0, 1 - dx * dx)) * radiusY;
+                  final ellipseY = sqrt(max(0, 1 - dx * dx)) * radiusY;
 
-              final y = isTop ? radiusY - ellipseY : ellipseY;
+                  final y = isTop ? radiusY - ellipseY : ellipseY;
 
-              return Positioned(
-                left: x,
-                top: y,
-                child: _buildBox(i, vals[i], isTop),
+                  return Positioned(
+                    left: x,
+                    top: y,
+                    child: _buildBox(i, vals[i], isTop, boxWidth, boxHeight),
+                  );
+                }),
               );
-            }),
-          );
+            },
+          ),);
         },
-      ),
-    );
+      );
   }
 
   // ===== SINGLE SENSOR BOX =====
-  Widget _buildBox(int index, double value, bool isTop) {
+  Widget _buildBox(int index, double value, bool isTop, double boxWidth, double boxHeight) {
     final sensorNumber = isTop ? index + 1 : index + 11;
 
     final color = _valueToColor(value);
     const textColor = Colors.white;
+
+    // Scale text sizes based on box dimensions
+    final sensorFontSize = (boxWidth * 0.33).clamp(14.0, 24.0);
+    final valueFontSize = (boxWidth * 0.44).clamp(18.0, 32.0);
+    final unitFontSize = (boxWidth * 0.16).clamp(10.0, 14.0);
 
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(begin: Colors.grey.shade300, end: color),
       duration: const Duration(milliseconds: 300),
       builder: (context, animatedColor, _) {
         return Container(
-          width: 55,
-          height: 85,
+          width: boxWidth,
+          height: boxHeight,
           decoration: BoxDecoration(
             color: animatedColor,
             borderRadius: BorderRadius.circular(12),
@@ -175,8 +185,8 @@ class SpatialBiteForce extends StatelessWidget {
             children: [
               Text(
                 '$sensorNumber',
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: sensorFontSize,
                   fontWeight: FontWeight.bold,
                   color: textColor,
                 ),
@@ -186,8 +196,8 @@ class SpatialBiteForce extends StatelessWidget {
 
               Text(
                 value.toStringAsFixed(0),
-                style: const TextStyle(
-                  fontSize: 24,
+                style: TextStyle(
+                  fontSize: valueFontSize,
                   fontWeight: FontWeight.bold,
                   color: textColor,
                 ),
@@ -198,7 +208,7 @@ class SpatialBiteForce extends StatelessWidget {
               Text(
                 'N',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: unitFontSize,
                   color: textColor.withOpacity(0.85),
                 ),
               ),

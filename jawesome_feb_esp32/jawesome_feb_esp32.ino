@@ -11,8 +11,8 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
-#include <BLE2902.h> // Mandatory for Notifications
-#include <esp_system.h> // Required for esp_random()
+#include <BLE2902.h>     // Mandatory for Notifications
+#include <esp_system.h>  // Required for esp_random()
 #include <stdio.h>
 
 // --- 2. CONFIGURATION ---
@@ -47,240 +47,257 @@ float biteSum = 0.0;
 float biteMax = 0.0;
 unsigned long biteCount = 0;
 
+// --- Simulated Battery ---
+float batteryPercent = 100.0;
+unsigned long lastBatteryDrop = 0;
+
+const unsigned long BATTERY_DROP_INTERVAL = 30000;  // 30 seconds
+const float BATTERY_DROP_AMOUNT = 0.05;             // slow drain
+
 
 // --- 5. CALLBACK CLASS FOR CONNECTION HANDLING ---
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-        deviceConnected = true;
-        Serial.println("Central connected.");
-    };
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer* pServer) {
+    deviceConnected = true;
+    Serial.println("Central connected.");
+  };
 
-    void onDisconnect(BLEServer* pServer) {
-        deviceConnected = false;
-        Serial.println("Central disconnected.");
-    }
+  void onDisconnect(BLEServer* pServer) {
+    deviceConnected = false;
+    Serial.println("Central disconnected.");
+  }
 };
 
 
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* pCharacteristic) {
+  void onWrite(BLECharacteristic* pCharacteristic) {
 
-        String value = pCharacteristic->getValue();
-        value.trim();
+    String value = pCharacteristic->getValue();
+    value.trim();
 
-        if (value == "RESET") {
+    if (value == "RESET") {
 
-            Serial.println("Reset cmd received");
+      Serial.println("Reset cmd received");
 
-            angleSum = 0.0;
-            angleMax = 0.0;
-            angleCount = 0;
+      angleSum = 0.0;
+      angleMax = 0.0;
+      angleCount = 0;
 
-            biteSum = 0.0;
-            biteMax = 0.0;
-            biteCount = 0;
-        }
+      biteSum = 0.0;
+      biteMax = 0.0;
+      biteCount = 0;
     }
+  }
 };
 
 
 // --- 6. INITIALIZATION ---
 void setup() {
 
-    Serial.begin(115200);
-    Serial.println("Starting ESP32C6 BLE Random Angle Server...");
-    
-    // --- Pin Setup ---
-    pinMode(yellowLED, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("Starting ESP32C6 BLE Random Angle Server...");
 
-    // Initial state: HIGH is OFF for an active-low LED
-    digitalWrite(yellowLED, HIGH); 
-    
+  // --- Pin Setup ---
+  pinMode(yellowLED, OUTPUT);
 
-    // --- BLE Setup ---
-    
-    // 1. Initialize BLE Device and set Local Name
-    BLEDevice::init("OraStretch_RESET_TEST");
-
-    // 2. Create the BLE Server
-    pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new MyServerCallbacks());
-
-    // 3. Create the BLE Service
-    BLEService* pService = pServer->createService(SERVICE_UUID);
-
-    // 4. Create DATA characteristic (READ + NOTIFY)
-    pTxCharacteristic = pService->createCharacteristic(
-                        CHARACTERISTIC_UUID,
-                        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
-                      );
-
-    pTxCharacteristic->addDescriptor(new BLE2902());
+  // Initial state: HIGH is OFF for an active-low LED
+  digitalWrite(yellowLED, HIGH);
 
 
-    // 5. Create COMMAND characteristic (WRITE)
-    pCmdCharacteristic = pService->createCharacteristic(
-                        CMD_CHARACTERISTIC_UUID,
-                        BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
-                      );
-    pCmdCharacteristic->addDescriptor(new BLE2902());
-    pCmdCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+  // --- BLE Setup ---
+
+  // 1. Initialize BLE Device and set Local Name
+  BLEDevice::init("OraStretch_RESET_TEST");
+
+  // 2. Create the BLE Server
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  // 3. Create the BLE Service
+  BLEService* pService = pServer->createService(SERVICE_UUID);
+
+  // 4. Create DATA characteristic (READ + NOTIFY)
+  pTxCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+  pTxCharacteristic->addDescriptor(new BLE2902());
 
 
-    // 6. Start the Service
-    pService->start();
+  // 5. Create COMMAND characteristic (WRITE)
+  pCmdCharacteristic = pService->createCharacteristic(
+    CMD_CHARACTERISTIC_UUID,
+    BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
+  pCmdCharacteristic->addDescriptor(new BLE2902());
+  pCmdCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
 
 
-    // 7. Start Advertising
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  // 6. Start the Service
+  pService->start();
 
-    pAdvertising->addServiceUUID(SERVICE_UUID);
-    pAdvertising->setScanResponse(true);
 
-    BLEDevice::startAdvertising();
+  // 7. Start Advertising
+  BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
 
-    Serial.println("BLE advertising started as 'OraStretch'");
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+
+  BLEDevice::startAdvertising();
+
+  Serial.println("BLE advertising started as 'OraStretch'");
 }
 
 
 // --- 7. MAIN LOOP (BLOCKING) ---
 void loop() {
 
-    // Check connection transitions: DISCONNECTED -> CONNECTED
-    if (deviceConnected && !oldDeviceConnected) {
+  // Check connection transitions: DISCONNECTED -> CONNECTED
+  if (deviceConnected && !oldDeviceConnected) {
 
-        oldDeviceConnected = true;
+    oldDeviceConnected = true;
 
-        // FIX: LOW = ON
-        digitalWrite(yellowLED, LOW); 
+    // FIX: LOW = ON
+    digitalWrite(yellowLED, LOW);
 
-        Serial.println("LED Solid ON");
+    Serial.println("LED Solid ON");
+  }
+
+
+  // Check connection transitions: CONNECTED -> DISCONNECTED
+  if (!deviceConnected && oldDeviceConnected) {
+
+    oldDeviceConnected = false;
+
+    // FIX: HIGH = OFF
+    digitalWrite(yellowLED, HIGH);
+
+    Serial.println("LED OFF, starting blink");
+
+    // Restart advertising
+    BLEDevice::startAdvertising();
+
+    // Delay to allow the disconnect event to settle
+    delay(500);
+  }
+
+
+  // --- Data Transmission Logic (Connected State) ---
+  if (deviceConnected) {
+
+    // --- Simulate battery drain ---
+    unsigned long now = millis();
+
+    if (now - lastBatteryDrop > BATTERY_DROP_INTERVAL) {
+
+      batteryPercent -= BATTERY_DROP_AMOUNT;
+
+      if (batteryPercent < 5.0) {
+        batteryPercent = 100.0;  // reset for testing
+      }
+
+      lastBatteryDrop = now;
     }
-    
 
-    // Check connection transitions: CONNECTED -> DISCONNECTED
-    if (!deviceConnected && oldDeviceConnected) {
+    // Re-assert the ON state (LOW)
+    digitalWrite(yellowLED, LOW);
 
-        oldDeviceConnected = false;
+    // 1. Generate random angle (-180 to 180)
+    uint32_t randomInt = esp_random();
+    const float UINT32_MAX_F = 4294967295.0;
 
-        // FIX: HIGH = OFF
-        digitalWrite(yellowLED, HIGH); 
+    float normalized = (float)randomInt / UINT32_MAX_F;
+    float randomAngle = (normalized * 360.0) - 180.0;
 
-        Serial.println("LED OFF, starting blink");
+    angleSum += randomAngle;
 
-        // Restart advertising
-        BLEDevice::startAdvertising();
+    if (randomAngle > angleMax) {
+      angleMax = randomAngle;
+    }
 
-        // Delay to allow the disconnect event to settle
-        delay(500); 
+    angleCount++;
+
+
+    // --- Generate 20 random bite forces (0-150) ---
+    for (int i = 0; i < NUM_BITES; i++) {
+
+      uint32_t biteRand = esp_random();
+      float biteNormalized = (float)biteRand / UINT32_MAX_F;
+
+      randomBites[i] = biteNormalized * 150.0;
+
+      biteSum += randomBites[i];
+
+      if (randomBites[i] > biteMax) {
+        biteMax = randomBites[i];
+      }
+
+      biteCount++;
     }
 
 
-    // --- Data Transmission Logic (Connected State) ---
-    if (deviceConnected) {
-
-        // Re-assert the ON state (LOW)
-        digitalWrite(yellowLED, LOW); 
-
-        // 1. Generate random angle (-180 to 180)
-        uint32_t randomInt = esp_random();
-        const float UINT32_MAX_F = 4294967295.0; 
-        
-        float normalized = (float)randomInt / UINT32_MAX_F; 
-        float randomAngle = (normalized * 360.0) - 180.0;
-
-        angleSum += randomAngle;
-
-        if(randomAngle > angleMax){
-            angleMax = randomAngle;
-        }
-
-        angleCount++;
+    float avgAngle = angleSum / angleCount;
+    float avgBite = biteSum / biteCount;
 
 
-        // --- Generate 20 random bite forces (0-150) ---
-        for(int i = 0; i < NUM_BITES; i++) {
-
-            uint32_t biteRand = esp_random();
-            float biteNormalized = (float)biteRand / UINT32_MAX_F;
-
-            randomBites[i] = biteNormalized * 150.0;
-
-            biteSum += randomBites[i];
-
-            if(randomBites[i] > biteMax){
-                biteMax = randomBites[i];
-            }
-
-            biteCount++;
-        }
+    // Timestamp
+    unsigned long timestamp = millis();
 
 
-        float avgAngle = angleSum / angleCount;
-        float avgBite = biteSum / biteCount;
+    // Data buffer
+    char dataBuffer[600];
+    int offset = 0;
 
 
-        // Timestamp
-        unsigned long timestamp = millis();
+    offset += snprintf(
+      dataBuffer + offset,
+      sizeof(dataBuffer) - offset,
+      "%lu,%.2f",
+      (unsigned int)timestamp,
+      randomAngle);
 
 
-        // Data buffer
-        char dataBuffer[600];
-        int offset = 0;
+    // Append 20 bite forces
+    for (int i = 0; i < NUM_BITES; i++) {
 
-
-        offset += snprintf(
-            dataBuffer + offset,
-            sizeof(dataBuffer) - offset,
-            "%lu,%.2f",
-            (unsigned int)timestamp,
-            randomAngle
-        );
-
-
-        // Append 20 bite forces
-        for(int i = 0; i < NUM_BITES; i++) {
-
-            offset += snprintf(
-                dataBuffer + offset,
-                sizeof(dataBuffer) - offset,
-                ",%.2f",
-                randomBites[i]
-            );
-        }
-
-
-        // Append stats
-        offset += snprintf(
-            dataBuffer + offset,
-            sizeof(dataBuffer) - offset,
-            ",%.2f,%.2f,%.2f,%.2f",
-            avgAngle,
-            angleMax,
-            avgBite,
-            biteMax
-        );
-
-
-        // Send data
-        Serial.print("Sending Time & Angle: ");
-        Serial.println(dataBuffer);
-
-        pTxCharacteristic->setValue(dataBuffer);
-        pTxCharacteristic->notify();
-        
-
-        // Send 5x per second
-        delay(200);
-    } 
-
-    // --- LED Blinking Logic (Disconnected State) ---
-    else {
-
-        digitalWrite(yellowLED, LOW);
-        delay(750);
-
-        digitalWrite(yellowLED, HIGH);
-        delay(750);
+      offset += snprintf(
+        dataBuffer + offset,
+        sizeof(dataBuffer) - offset,
+        ",%.2f",
+        randomBites[i]);
     }
+
+
+    // Append stats + battery
+    offset += snprintf(
+      dataBuffer + offset,
+      sizeof(dataBuffer) - offset,
+      ",%.2f,%.2f,%.2f,%.2f,%.1f",
+      avgAngle,
+      angleMax,
+      avgBite,
+      biteMax,
+      batteryPercent);
+
+
+    // Send data
+    Serial.print("Sending Data: ");
+    Serial.println(dataBuffer);
+
+    pTxCharacteristic->setValue(dataBuffer);
+    pTxCharacteristic->notify();
+
+
+    // Send 5x per second
+    delay(200);
+  }
+
+  // --- LED Blinking Logic (Disconnected State) ---
+  else {
+
+    digitalWrite(yellowLED, LOW);
+    delay(750);
+
+    digitalWrite(yellowLED, HIGH);
+    delay(750);
+  }
 }
