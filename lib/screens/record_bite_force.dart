@@ -79,42 +79,46 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
           // ===== Title + mode buttons =====
           Align(
             alignment: Alignment.centerRight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Select Mode',
                   style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                 ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 6,
-                  alignment: WrapAlignment.end,
-                  children: [
-                    _modeButton(
-                      context: context,
-                      icon: Icons.view_week,
-                      label: 'Map',
-                      selected: _viewMode == ViewMode.spatial,
-                      onPressed: () => setState(() => _viewMode = ViewMode.spatial),
-                    ),
-                    _modeButton(
-                      context: context,
-                      icon: Icons.speed,
-                      label: 'Meter',
-                      selected: _viewMode == ViewMode.meter,
-                      onPressed: () => setState(() => _viewMode = ViewMode.meter),
-                    ),
-                    _modeButton(
-                      context: context,
-                      icon: Icons.show_chart,
-                      label: 'Graph',
-                      selected: _viewMode == ViewMode.timeseries,
-                      onPressed: () =>
-                          setState(() => _viewMode = ViewMode.timeseries),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 6,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      _modeButton(
+                        context: context,
+                        icon: Icons.view_week,
+                        label: 'Map',
+                        selected: _viewMode == ViewMode.spatial,
+                        onPressed: () =>
+                            setState(() => _viewMode = ViewMode.spatial),
+                      ),
+                      _modeButton(
+                        context: context,
+                        icon: Icons.speed,
+                        label: 'Meter',
+                        selected: _viewMode == ViewMode.meter,
+                        onPressed: () => setState(() => _viewMode = ViewMode.meter),
+                      ),
+                      _modeButton(
+                        context: context,
+                        icon: Icons.show_chart,
+                        label: 'Graph',
+                        selected: _viewMode == ViewMode.timeseries,
+                        onPressed: () =>
+                            setState(() => _viewMode = ViewMode.timeseries),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 import 'dart:io' show Platform;
+import 'dart:math' show max;
 import 'package:flutter/material.dart';
 import 'pages.dart';
 import 'widgets/bluetooth_button.dart';
@@ -342,121 +343,211 @@ class _PageNavigationState extends State<PageNavigation> {
   final ScrollController _scrollController = ScrollController();
   double _indicatorPosition = 0.0;
   double _indicatorWidth = 0.0;
+  double _viewportWidth = 0.0;
   late List<double> _tabWidths;
   late List<double> _tabPositions;
+
+  void _onNavScrolled() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     widget.pageController.addListener(_updateIndicator);
-    _calculateTabDimensions();
+    _scrollController.addListener(_onNavScrolled);
+    _tabWidths = [];
+    _tabPositions = [];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateIndicator();
+    });
   }
 
   @override
   void dispose() {
     widget.pageController.removeListener(_updateIndicator);
+    _scrollController.removeListener(_onNavScrolled);
     super.dispose();
   }
 
-  void _calculateTabDimensions() {
+  void _calculateTabDimensions(
+    BuildContext context,
+    double viewportWidth,
+    double horizontalPadding,
+    double fontSize,
+  ) {
     _tabWidths = [];
     _tabPositions = [];
-    double currentPosition = 24; // Initial left padding
 
+    final List<double> widths = [];
     for (final page in widget.pages) {
       final textPainter = TextPainter(
         text: TextSpan(
           text: page.title,
-          style: const TextStyle(color: Color(0xFF374151)),
+          style: TextStyle(
+            color: const Color(0xFF374151),
+            fontSize: fontSize,
+            fontWeight: FontWeight.w500,
+          ),
         ),
+        textScaler: MediaQuery.textScalerOf(context),
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
+      widths.add(textPainter.width + horizontalPadding * 2);
+    }
 
+    final totalTabsWidth = widths.fold<double>(0.0, (sum, w) => sum + w);
+    double currentPosition =
+        max(0.0, (viewportWidth - totalTabsWidth) / 2); // center when short
+
+    for (final tabWidth in widths) {
       _tabPositions.add(currentPosition);
-      final tabWidth = textPainter.width + 48; // Add horizontal padding
       _tabWidths.add(tabWidth);
       currentPosition += tabWidth;
     }
   }
 
+  void _scrollActiveTabIntoView() {
+    if (!_scrollController.hasClients || _viewportWidth <= 0 || _tabWidths.isEmpty) {
+      return;
+    }
+
+    final center = _indicatorPosition + (_indicatorWidth / 2);
+    final targetOffset =
+        (center - (_viewportWidth / 2)).clamp(0.0, _scrollController.position.maxScrollExtent);
+
+    // Jump during drag updates keeps nav synced with page swipe.
+    _scrollController.jumpTo(targetOffset);
+  }
+
+  void _syncIndicatorFromPageValue(double pageValue) {
+    final pageIndex = pageValue.floor();
+    final offset = pageValue - pageIndex;
+
+    if (pageIndex < 0 || pageIndex >= _tabPositions.length) {
+      return;
+    }
+
+    final currentTabPos = _tabPositions[pageIndex];
+    final currentTabWidth = _tabWidths[pageIndex];
+
+    if (pageIndex + 1 < _tabPositions.length) {
+      final nextTabPos = _tabPositions[pageIndex + 1];
+      final nextTabWidth = _tabWidths[pageIndex + 1];
+
+      _indicatorPosition =
+          currentTabPos + (nextTabPos - currentTabPos) * offset;
+      _indicatorWidth =
+          currentTabWidth + (nextTabWidth - currentTabWidth) * offset;
+    } else {
+      _indicatorPosition = currentTabPos;
+      _indicatorWidth = currentTabWidth;
+    }
+  }
+
   void _updateIndicator() {
+    if (_tabPositions.isEmpty || _tabWidths.isEmpty) {
+      return;
+    }
+
     setState(() {
       final pageValue = widget.pageController.page ?? 0.0;
-      final pageIndex = pageValue.floor();
-      final offset = pageValue - pageIndex;
+      _syncIndicatorFromPageValue(pageValue);
 
-      if (pageIndex < _tabPositions.length) {
-        final currentTabPos = _tabPositions[pageIndex];
-        final currentTabWidth = _tabWidths[pageIndex];
-
-        if (pageIndex + 1 < _tabPositions.length) {
-          // Interpolate between current and next tab
-          final nextTabPos = _tabPositions[pageIndex + 1];
-          final nextTabWidth = _tabWidths[pageIndex + 1];
-
-          _indicatorPosition =
-              currentTabPos + (nextTabPos - currentTabPos) * offset;
-          _indicatorWidth =
-              currentTabWidth + (nextTabWidth - currentTabWidth) * offset;
-        } else {
-          _indicatorPosition = currentTabPos;
-          _indicatorWidth = currentTabWidth;
-        }
-      }
+      _scrollActiveTabIntoView();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFBFDBFE))),
-      ),
-      child: Stack(
-        children: [
-          SingleChildScrollView(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: MediaQuery.of(context).size.width,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.pages.length, (index) {
-                  return TextButton(
-                    onPressed: () => widget.onPageChange(index),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
-                      ),
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: const Color(0xFF374151),
-                    ),
-                    child: Text(
-                      widget.pages[index].title,
-                      style: const TextStyle(color: Color(0xFF374151)),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ), // Animated underline that follows page swipes
-          Positioned(
-            bottom: 0,
-            left: _indicatorPosition,
-            child: Container(
-              height: 2,
-              width: _indicatorWidth,
-              color: const Color(0xFF2563EB),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _viewportWidth = constraints.maxWidth;
+        final isMobile = _viewportWidth < 600;
+        final horizontalPadding = isMobile ? 12.0 : 24.0;
+        final verticalPadding = isMobile ? 12.0 : 16.0;
+        final fontSize = isMobile ? 14.0 : 16.0;
+
+        _calculateTabDimensions(
+          context,
+          _viewportWidth,
+          horizontalPadding,
+          fontSize,
+        );
+        final pageValue = widget.pageController.hasClients
+            ? (widget.pageController.page ?? widget.currentPageIndex.toDouble())
+            : widget.currentPageIndex.toDouble();
+        _syncIndicatorFromPageValue(pageValue);
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Color(0xFFBFDBFE))),
           ),
-        ],
-      ),
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: _viewportWidth,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(widget.pages.length, (index) {
+                      return SizedBox(
+                        width: _tabWidths[index],
+                        child: TextButton(
+                          onPressed: () => widget.onPageChange(index),
+                          style: TextButton.styleFrom(
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: horizontalPadding,
+                              vertical: verticalPadding,
+                            ),
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: const Color(0xFF374151),
+                          ),
+                          child: Center(
+                            child: Text(
+                              widget.pages[index].title,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.visible,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: const Color(0xFF374151),
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ), // Animated underline that follows page swipes
+              Positioned(
+                bottom: 0,
+                left: _indicatorPosition -
+                    (_scrollController.hasClients ? _scrollController.offset : 0),
+                child: Container(
+                  height: 2,
+                  width: _indicatorWidth,
+                  color: const Color(0xFF2563EB),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
