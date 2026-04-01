@@ -24,15 +24,6 @@ class _TsMouthOpeningState extends State<TsMouthOpening> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 12),
-
-            const Text(
-              "Mouth Opening (Current)",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 12),
-
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: box.listenable(

@@ -11,10 +11,7 @@ import 'main.dart';
 class MyPage extends StatefulWidget {
   final bool isBluetoothConnected;
 
-  const MyPage({
-    super.key,
-    required this.isBluetoothConnected,
-  });
+  const MyPage({super.key, required this.isBluetoothConnected});
 
   @override
   State<MyPage> createState() => _MyPageState();
@@ -33,33 +30,28 @@ class _MyPageState extends State<MyPage> {
     _pageController = PageController(initialPage: currentIndex);
 
     pages = [
-      PageItem(
-        id: 'ble',
-        title: 'Bluetooth Data',
-        builder: () => const BLEdata(),
-      ),
+      PageItem(id: 'ble', title: 'Raw', builder: () => const BLEdata()),
       PageItem(
         id: 'mouth',
-        title: 'Record Mouth Opening',
+        title: 'Mouth Opening',
         builder: () => RecordMouthOpening(
           isBluetoothConnected: widget.isBluetoothConnected,
         ),
       ),
       PageItem(
         id: 'bite',
-        title: 'Record Bite Force',
-        builder: () => RecordBiteForce(
-          isBluetoothConnected: widget.isBluetoothConnected,
-        ),
+        title: 'Bite Force',
+        builder: () =>
+            RecordBiteForce(isBluetoothConnected: widget.isBluetoothConnected),
       ),
       PageItem(
         id: 'sesh',
-        title: 'Session History',
+        title: 'History',
         builder: () => const SessionHistory(),
       ),
       PageItem(
         id: 'stats',
-        title: 'Historical Statistics',
+        title: 'Trends',
         builder: () => const HistoricalStatistics(),
       ),
     ];
@@ -73,8 +65,7 @@ class _MyPageState extends State<MyPage> {
   }
 
   bool get _shouldShowFooterButton {
-    return ['mouth', 'bite', 'ble']
-        .contains(pages[currentIndex].id);
+    return ['mouth', 'bite', 'ble'].contains(pages[currentIndex].id);
   }
 
   void _onTabTapped(int index) {
@@ -99,6 +90,7 @@ class _MyPageState extends State<MyPage> {
           pages: pages,
           currentPageIndex: currentIndex,
           onPageChange: _onTabTapped,
+          pageController: _pageController,
         ),
         Expanded(
           child: PageView(

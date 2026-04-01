@@ -75,11 +75,7 @@ class BatteryStatus extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: Colors.white,
-            ),
+            Icon(icon, size: 20, color: Colors.white),
             const SizedBox(width: 4),
             Text(
               "${battery.toStringAsFixed(0)}%",
@@ -229,12 +225,14 @@ class PageNavigation extends StatefulWidget {
   final List<PageItem> pages;
   final int currentPageIndex;
   final Function(int) onPageChange;
+  final PageController pageController;
 
   const PageNavigation({
     super.key,
     required this.pages,
     required this.currentPageIndex,
     required this.onPageChange,
+    required this.pageController,
   });
 
   @override
@@ -243,6 +241,72 @@ class PageNavigation extends StatefulWidget {
 
 class _PageNavigationState extends State<PageNavigation> {
   final ScrollController _scrollController = ScrollController();
+  double _indicatorPosition = 0.0;
+  double _indicatorWidth = 0.0;
+  late List<double> _tabWidths;
+  late List<double> _tabPositions;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.pageController.addListener(_updateIndicator);
+    _calculateTabDimensions();
+  }
+
+  @override
+  void dispose() {
+    widget.pageController.removeListener(_updateIndicator);
+    super.dispose();
+  }
+
+  void _calculateTabDimensions() {
+    _tabWidths = [];
+    _tabPositions = [];
+    double currentPosition = 24; // Initial left padding
+
+    for (final page in widget.pages) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: page.title,
+          style: const TextStyle(color: Color(0xFF374151)),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+
+      _tabPositions.add(currentPosition);
+      final tabWidth = textPainter.width + 48; // Add horizontal padding
+      _tabWidths.add(tabWidth);
+      currentPosition += tabWidth;
+    }
+  }
+
+  void _updateIndicator() {
+    setState(() {
+      final pageValue = widget.pageController.page ?? 0.0;
+      final pageIndex = pageValue.floor();
+      final offset = pageValue - pageIndex;
+
+      if (pageIndex < _tabPositions.length) {
+        final currentTabPos = _tabPositions[pageIndex];
+        final currentTabWidth = _tabWidths[pageIndex];
+
+        if (pageIndex + 1 < _tabPositions.length) {
+          // Interpolate between current and next tab
+          final nextTabPos = _tabPositions[pageIndex + 1];
+          final nextTabWidth = _tabWidths[pageIndex + 1];
+
+          _indicatorPosition =
+              currentTabPos + (nextTabPos - currentTabPos) * offset;
+          _indicatorWidth =
+              currentTabWidth + (nextTabWidth - currentTabWidth) * offset;
+        } else {
+          _indicatorPosition = currentTabPos;
+          _indicatorWidth = currentTabWidth;
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,50 +315,48 @@ class _PageNavigationState extends State<PageNavigation> {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFBFDBFE))),
       ),
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: List.generate(widget.pages.length, (index) {
-            final bool isActive = index == widget.currentPageIndex;
-            return TextButton(
-              onPressed: () => widget.onPageChange(index),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                backgroundColor: isActive
-                    ? const Color(0xFFEFF6FF)
-                    : Colors.transparent,
-                foregroundColor: isActive
-                    ? const Color(0xFF1D4ED8)
-                    : const Color(0xFF374151),
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.of(context).size.width,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.pages[index].title,
-                    style: TextStyle(
-                      color: isActive
-                          ? const Color(0xFF1D4ED8)
-                          : const Color(0xFF374151),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.pages.length, (index) {
+                  return TextButton(
+                    onPressed: () => widget.onPageChange(index),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: const Color(0xFF374151),
                     ),
-                  ),
-                  if (isActive)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      height: 2,
-                      width: 40,
-                      color: const Color(0xFF2563EB),
+                    child: Text(
+                      widget.pages[index].title,
+                      style: const TextStyle(color: Color(0xFF374151)),
                     ),
-                ],
+                  );
+                }),
               ),
-            );
-          }),
-        ),
+            ),
+          ), // Animated underline that follows page swipes
+          Positioned(
+            bottom: 0,
+            left: _indicatorPosition,
+            child: Container(
+              height: 2,
+              width: _indicatorWidth,
+              color: const Color(0xFF2563EB),
+            ),
+          ),
+        ],
       ),
     );
   }

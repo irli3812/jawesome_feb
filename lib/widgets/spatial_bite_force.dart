@@ -18,20 +18,6 @@ class SpatialBiteForce extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 12),
-
-            const Text(
-              'Colored Force-Map',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: box.listenable(keys: ['session']),
@@ -92,18 +78,15 @@ class SpatialBiteForce extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          runAlignment: WrapAlignment.center,
-          spacing: 12,
-          runSpacing: 4,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              bfGaugeMin.toStringAsFixed(0),
+              '${bfGaugeMin.toStringAsFixed(0)} N',
               style: const TextStyle(fontSize: 18),
             ),
             Text(
-              ((bfGaugeMin + bfGaugeMax) / 2).toStringAsFixed(0),
+              '${((bfGaugeMin + bfGaugeMax) / 2).toStringAsFixed(0)} N',
               style: const TextStyle(fontSize: 18),
             ),
             Text(

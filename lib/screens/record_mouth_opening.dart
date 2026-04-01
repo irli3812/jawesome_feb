@@ -11,17 +11,13 @@ enum ViewMode { meter, timeseries }
 class RecordMouthOpening extends StatefulWidget {
   final bool isBluetoothConnected;
 
-  const RecordMouthOpening({
-    super.key,
-    required this.isBluetoothConnected,
-  });
+  const RecordMouthOpening({super.key, required this.isBluetoothConnected});
 
   @override
   State<RecordMouthOpening> createState() => _RecordMouthOpeningState();
 }
 
 class _RecordMouthOpeningState extends State<RecordMouthOpening> {
-
   ViewMode _viewMode = ViewMode.meter;
 
   @override
@@ -35,13 +31,14 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
         children: [
           // ===== Title + buttons =====
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               const Text(
-                'Record Mouth Opening',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                'Select Mode',
+                style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
               ),
-              const Spacer(),
-              ElevatedButton(
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
                 onPressed: () => setState(() {
                   _viewMode = ViewMode.meter;
                 }),
@@ -53,9 +50,11 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                       ? Colors.white
                       : Colors.black,
                 ),
-                child: const Icon(Icons.speed),
+                icon: const Icon(Icons.speed),
+                label: const Text("Meter"),
               ),
-              ElevatedButton(
+              const SizedBox(width: 6),
+              ElevatedButton.icon(
                 onPressed: () => setState(() {
                   _viewMode = ViewMode.timeseries;
                 }),
@@ -67,12 +66,29 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                       ? Colors.white
                       : Colors.black,
                 ),
-                child: const Icon(Icons.show_chart),
+                icon: const Icon(Icons.show_chart),
+                label: const Text("Graph"),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
+
+          Center(
+            child: _viewMode == ViewMode.meter
+                ? const Text(
+                    'Latest Mouth Opening Distance (mm)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  )
+                : const Text(
+                    'Current Mouth Opening Distance and Time',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+          ),
+
+          const SizedBox(height: 3),
 
           // ===== METER (fills middle space) =====
           Expanded(
@@ -80,14 +96,25 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
             child: _viewMode == ViewMode.meter
                 ? ValueListenableBuilder(
                     valueListenable: box.listenable(
-                        keys: ['mouth_opening_current_series', 'mouth_opening_max_series', 'mouth_opening_avg_series', 'resetSignal', 'startSignal']),
+                      keys: [
+                        'mouth_opening_current_series',
+                        'mouth_opening_max_series',
+                        'mouth_opening_avg_series',
+                        'resetSignal',
+                        'startSignal',
+                      ],
+                    ),
                     builder: (context, _, __) {
+                      final List currentSeries = List.from(
+                        box.get(
+                          'mouth_opening_current_series',
+                          defaultValue: [],
+                        ),
+                      );
 
-                      final List currentSeries =
-                          List.from(box.get('mouth_opening_current_series', defaultValue: []));
-
-                      final double value =
-                          currentSeries.isEmpty ? 0 : (currentSeries.last as num).toDouble();
+                      final double value = currentSeries.isEmpty
+                          ? 0
+                          : (currentSeries.last as num).toDouble();
 
                       return SizedBox.expand(
                         child: CustomPaint(
@@ -103,24 +130,38 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
 
           // ===== METRICS =====
           ValueListenableBuilder(
-            valueListenable:
-                box.listenable(keys: ['mouth_opening_current_series', 'mouth_opening_avg_series', 'mouth_opening_max_series', 'mouth_opening_max_series', 'resetSignal', 'startSignal']),
+            valueListenable: box.listenable(
+              keys: [
+                'mouth_opening_current_series',
+                'mouth_opening_avg_series',
+                'mouth_opening_max_series',
+                'mouth_opening_max_series',
+                'resetSignal',
+                'startSignal',
+              ],
+            ),
             builder: (context, _, __) {
-              final List currentSeries =
-                  List.from(box.get('mouth_opening_current_series', defaultValue: []));
-              final List avgSeries =
-                  List.from(box.get('mouth_opening_avg_series', defaultValue: []));
-              final List maxSeries =
-                  List.from(box.get('mouth_opening_max_series', defaultValue: []));
+              final List currentSeries = List.from(
+                box.get('mouth_opening_current_series', defaultValue: []),
+              );
+              final List avgSeries = List.from(
+                box.get('mouth_opening_avg_series', defaultValue: []),
+              );
+              final List maxSeries = List.from(
+                box.get('mouth_opening_max_series', defaultValue: []),
+              );
 
-              final double value =
-                  currentSeries.isEmpty ? 0 : (currentSeries.last as num).toDouble();
+              final double value = currentSeries.isEmpty
+                  ? 0
+                  : (currentSeries.last as num).toDouble();
 
-              final double avg =
-                  avgSeries.isEmpty ? 0 : (avgSeries.last as num).toDouble();
+              final double avg = avgSeries.isEmpty
+                  ? 0
+                  : (avgSeries.last as num).toDouble();
 
-              final double maxValue =
-                  maxSeries.isEmpty ? 0 : (maxSeries.last as num).toDouble();
+              final double maxValue = maxSeries.isEmpty
+                  ? 0
+                  : (maxSeries.last as num).toDouble();
 
               return Column(
                 children: [
@@ -130,24 +171,21 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                         child: Text(
                           'Latest',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           'Max',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           'Average',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -181,10 +219,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                   const SizedBox(height: 8),
                   const Text(
                     'millimeters',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
+                    style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                   ),
                 ],
               );
@@ -213,7 +248,7 @@ class _SemiGaugePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // ===== Colored arcs =====
-    arcPaint.color = Colors.red;
+    arcPaint.color = Color(0xFF009E73); // teal (low)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi,
@@ -222,7 +257,7 @@ class _SemiGaugePainter extends CustomPainter {
       arcPaint,
     );
 
-    arcPaint.color = Colors.yellow;
+    arcPaint.color = Color(0xFFE69F00); // orange (medium)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi + pi / 3,
@@ -231,7 +266,7 @@ class _SemiGaugePainter extends CustomPainter {
       arcPaint,
     );
 
-    arcPaint.color = Colors.green;
+    arcPaint.color = Color(0xFFCC79A7); // purple (high)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi + 2 * pi / 3,
@@ -273,10 +308,7 @@ class _SemiGaugePainter extends CustomPainter {
         final tp = TextPainter(
           text: TextSpan(
             text: val.round().toString(),
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black,
-            ),
+            style: const TextStyle(fontSize: 12, color: Colors.black),
           ),
           textDirection: TextDirection.ltr,
         )..layout();

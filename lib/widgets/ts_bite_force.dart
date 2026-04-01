@@ -257,8 +257,6 @@ class _TsBiteForceState extends State<TsBiteForce> {
               },
             ),
 
-            const SizedBox(height: 12), // ✅ space between legend and plot
-
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: box.listenable(keys: ['session']),

@@ -52,6 +52,7 @@ class _FooterState extends State<Footer> {
         final isRunning = _session.isRunning;
 
         return Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
             color: Colors.white,

@@ -1,5 +1,4 @@
 // DEFAULT METER MODE
-
 // ignore_for_file: unnecessary_underscores
 
 import 'dart:math';
@@ -36,14 +35,14 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
         children: [
           // ===== Title + mode buttons =====
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               const Text(
-                'Record Bite Force',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                'Select Mode',
+                style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
               ),
-              const Spacer(),
-
-              ElevatedButton(
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
                 onPressed: () => setState(() {
                   _viewMode = ViewMode.spatial;
                 }),
@@ -55,9 +54,11 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                       ? Colors.white
                       : Colors.black,
                 ),
-                child: const Icon(Icons.view_week), // spatial teeth map
+                icon: const Icon(Icons.view_week),
+                label: const Text("Map"),
               ),
-              ElevatedButton(
+              const SizedBox(width: 6),
+              ElevatedButton.icon(
                 onPressed: () => setState(() {
                   _viewMode = ViewMode.meter;
                 }),
@@ -69,9 +70,11 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                       ? Colors.white
                       : Colors.black,
                 ),
-                child: const Icon(Icons.speed),
+                icon: const Icon(Icons.speed),
+                label: const Text("Meter"),
               ),
-              ElevatedButton(
+              const SizedBox(width: 6),
+              ElevatedButton.icon(
                 onPressed: () => setState(() {
                   _viewMode = ViewMode.timeseries;
                 }),
@@ -83,12 +86,35 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                       ? Colors.white
                       : Colors.black,
                 ),
-                child: const Icon(Icons.show_chart),
+                icon: const Icon(Icons.show_chart),
+                label: const Text("Graph"),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
+
+          Center(
+            child: _viewMode == ViewMode.meter
+                ? const Text(
+                    'Latest Bite Force (N)',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  )
+                : _viewMode == ViewMode.spatial
+                    ? const Text(
+                        'Colored Teeth Force Map',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      )
+                    : const Text(
+                        'Current Bite Force and Time',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+          ),
+
+          const SizedBox(height: 3),
 
           // ===== MAIN VIEW (fills middle space) =====
           Expanded(
@@ -96,10 +122,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
             child: _viewMode == ViewMode.meter
                 ? ValueListenableBuilder(
                     valueListenable: box.listenable(
-                      keys: [
-                        'session',
-                        'startSignal',
-                      ],
+                      keys: ['session', 'startSignal'],
                     ),
                     builder: (context, _, __) {
                       final int? resetSignal = box.get('resetSignal');
@@ -277,7 +300,7 @@ class _BiteForceGaugePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // ===== Colored arcs =====
-    arcPaint.color = Colors.red;
+    arcPaint.color = Color(0xFF009E73); // teal (low)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi,
@@ -286,7 +309,7 @@ class _BiteForceGaugePainter extends CustomPainter {
       arcPaint,
     );
 
-    arcPaint.color = Colors.yellow;
+    arcPaint.color = Color(0xFFE69F00); // orange (medium)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi + pi / 3,
@@ -295,7 +318,7 @@ class _BiteForceGaugePainter extends CustomPainter {
       arcPaint,
     );
 
-    arcPaint.color = Colors.green;
+    arcPaint.color = Color(0xFFCC79A7); // purple (high)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi + 2 * pi / 3,
