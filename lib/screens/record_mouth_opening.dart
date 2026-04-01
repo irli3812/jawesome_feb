@@ -23,9 +23,11 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
   @override
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -239,12 +241,14 @@ class _SemiGaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Responsive sizing
+    final isMobile = size.width < 400;
     final center = Offset(size.width / 2, size.height * 0.9);
-    final radius = size.width * 0.45;
+    final radius = size.width * (isMobile ? 0.38 : 0.45);
 
     final arcPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
+      ..strokeWidth = isMobile ? 10 : 14
       ..strokeCap = StrokeCap.round;
 
     // ===== Colored arcs =====
@@ -278,7 +282,7 @@ class _SemiGaugePainter extends CustomPainter {
     // ===== Tick marks & labels (every 5 mm) =====
     final tickPaint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 2;
+      ..strokeWidth = isMobile ? 1.5 : 2;
 
     for (int step = 0; step <= minorDivisions; step++) {
       final double val =
@@ -330,7 +334,7 @@ class _SemiGaugePainter extends CustomPainter {
 
     final needlePaint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 3;
+      ..strokeWidth = isMobile ? 2 : 3;
 
     final needleEnd = Offset(
       center.dx + cos(angle) * radius * 0.8,
@@ -338,7 +342,7 @@ class _SemiGaugePainter extends CustomPainter {
     );
 
     canvas.drawLine(center, needleEnd, needlePaint);
-    canvas.drawCircle(center, 6, Paint()..color = Colors.black);
+    canvas.drawCircle(center, isMobile ? 4 : 6, Paint()..color = Colors.black);
   }
 
   @override

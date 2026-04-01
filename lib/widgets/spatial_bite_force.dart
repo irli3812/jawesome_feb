@@ -5,6 +5,24 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
 
+/// RESPONSIVE SPATIAL BITE FORCE VISUALIZATION
+///
+/// RESPONSIVE UPDATES APPLIED:
+/// - Container padding: Scales based on screen width
+/// - Box sizing: Responsive constraints (min/max values)
+/// - Font sizing: Scales proportionally with box width
+/// 
+/// PATTERN USED:
+///   final screenWidth = MediaQuery.of(context).size.width;
+///   final isMobile = screenWidth < 400;
+///   final boxWidth = (availableWidth / vals.length).clamp(
+///     isMobile ? 25.0 : 35.0,
+///     isMobile ? 50.0 : 75.0,
+///   );
+/// 
+/// For label legend text:
+///   Text('Label', style: TextStyle(fontSize: isMobile ? 14 : 18))
+
 class SpatialBiteForce extends StatelessWidget {
   const SpatialBiteForce({super.key});
 

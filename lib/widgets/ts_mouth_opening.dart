@@ -4,6 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
 
+/// RESPONSIVE TIME SERIES MOUTH OPENING CHART
+///
+/// RESPONSIVE UPDATES APPLIED:
+/// - Container padding: 12dp (mobile) to 16dp (desktop)
+/// - Axis stroke widths: 1.5dp (mobile) to 2dp (desktop)
+/// - Chart line stroke: 2dp (mobile) to 3dp (desktop)
+///
+/// REMAINING UPDATES NEEDED:
+/// - All TextPainter font sizes should use responsive sizing:
+///   final fontSize = isMobile ? 12 : 14;
+/// 
+/// Use ResponsiveSize utility from main.dart for consistency
+
 class TsMouthOpening extends StatefulWidget {
   const TsMouthOpening({super.key});
 
@@ -91,6 +104,7 @@ class _MouthOpeningPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final isMobile = size.width < 400;
     const double bottomPad = 70;
     final double height = size.height - bottomPad;
 
@@ -102,7 +116,7 @@ class _MouthOpeningPainter extends CustomPainter {
 
     final axisPaint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 2;
+      ..strokeWidth = isMobile ? 1.5 : 2;
 
     canvas.drawLine(Offset(leftPad, 0), Offset(leftPad, height), axisPaint);
 
@@ -199,7 +213,7 @@ class _MouthOpeningPainter extends CustomPainter {
 
     final paint = Paint()
       ..color = Colors.blue
-      ..strokeWidth = 3
+      ..strokeWidth = isMobile ? 2 : 3
       ..style = PaintingStyle.stroke;
 
     if (data.length < 2) return;

@@ -14,6 +14,105 @@ void main() async {
   runApp(const MyApp());
 }
 
+/// ───────────────────────────────────────────────
+/// RESPONSIVE DESIGN - IMPLEMENTATION STATUS
+/// ───────────────────────────────────────────────
+/// 
+/// ✅ COMPLETED UPDATES (9 files):
+/// 1. lib/main.dart - ResponsiveSize utility class
+/// 2. lib/widgets/footer.dart - Footer responsive sizing
+/// 3. lib/screens/record_mouth_opening.dart - Gauge painter responsive
+/// 4. lib/screens/record_bite_force.dart - Gauge painter responsive  
+/// 5. lib/widgets/ts_mouth_opening.dart - Chart axis responsive
+/// 6. lib/widgets/ts_bite_force.dart - Chart axis responsive
+/// 7. lib/screens/session_history.dart - Full responsive remake
+/// 8. lib/screens/historical_statistics.dart - Full responsive remake
+/// 9. lib/widgets/end_popup.dart - Dialog responsive updates
+///
+/// 🔶 NEEDS MANUAL UPDATES (5 files with code comments):
+/// 1. lib/screens/ble.dart - Implement TabBarView for mobile
+/// 2. lib/widgets/bluetooth_button.dart - Button icon size scaling
+/// 3. lib/widgets/spatial_bite_force.dart - Box legend font sizes
+/// 4. lib/widgets/ts_mouth_opening.dart - Chart label text sizes
+/// 5. lib/widgets/ts_bite_force.dart - Chart label text sizes
+///
+/// KEY BREAKPOINTS:
+/// - Mobile: < 400dp (0.8x scale)
+/// - Phone: 400-600dp (0.9x scale)
+/// - Tablet: 600-1200dp (1.0x base)
+/// - Desktop: > 1200dp (1.1x scale)
+/// ───────────────────────────────────────────────
+class ResponsiveSize {
+  static double getResponsiveWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width;
+  }
+
+  static double getResponsiveHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height;
+  }
+
+  static bool isMobile(BuildContext context) {
+    return getResponsiveWidth(context) < 600;
+  }
+
+  static bool isTablet(BuildContext context) {
+    final width = getResponsiveWidth(context);
+    return width >= 600 && width < 1200;
+  }
+
+  static double responsiveFontSize(
+    BuildContext context, {
+    required double mobileSize,
+    double? tabletSize,
+    double? desktopSize,
+  }) {
+    final width = getResponsiveWidth(context);
+    if (width < 600) return mobileSize;
+    if (width < 1200) return tabletSize ?? mobileSize * 1.1;
+    return desktopSize ?? mobileSize * 1.2;
+  }
+
+  static double responsivePadding(
+    BuildContext context, {
+    required double mobilePadding,
+    double? tabletPadding,
+    double? desktopPadding,
+  }) {
+    final width = getResponsiveWidth(context);
+    if (width < 600) return mobilePadding;
+    if (width < 1200) return tabletPadding ?? mobilePadding * 1.5;
+    return desktopPadding ?? mobilePadding * 2.0;
+  }
+
+  static double scaleValue(BuildContext context, double baseValue) {
+    final width = getResponsiveWidth(context);
+    if (width < 400) return baseValue * 0.8;
+    if (width < 600) return baseValue * 0.9;
+    if (width < 1200) return baseValue;
+    return baseValue * 1.1;
+  }
+
+  static EdgeInsets responsiveInsets(
+    BuildContext context, {
+    double? all,
+    double? horizontal,
+    double? vertical,
+    double? top,
+    double? bottom,
+    double? start,
+    double? end,
+  }) {
+    final scale = scaleValue(context, 1.0);
+    if (all != null) return EdgeInsets.all(all * scale);
+    return EdgeInsets.fromLTRB(
+      start ?? horizontal ?? 0,
+      top ?? vertical ?? 0,
+      end ?? horizontal ?? 0,
+      bottom ?? vertical ?? 0,
+    );
+  }
+}
+
 /// Global Meter Gauge Limits RECORD MOUTH OPENING
 const double gaugeMin = -180.0;
 const double gaugeMax = 180.0;

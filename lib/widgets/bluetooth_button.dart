@@ -5,6 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// RESPONSIVEBLUETOOTHBUTTON
+///
+/// RESPONSIVE UPDATES NEEDED:
+/// - Button size: 44x44dp (mobile) to 48x48dp (desktop)
+/// - Icon size: 20dp (mobile) to 24dp (desktop)
+/// - Device selection dialog padding and font sizes
+///
+/// PATTERN TO APPLY:
+///   final screenWidth = MediaQuery.of(context).size.width;
+///   final isMobile = screenWidth < 600;
+///   
+///   minimumSize: isMobile ? const Size(44, 44) : const Size(48, 48),
+///   child: Icon(..., size: isMobile ? 20 : 24)
+
 class BluetoothButton extends StatelessWidget {
   final bool isConnected;
   final ValueChanged<bool> onConnectionChange;

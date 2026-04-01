@@ -21,6 +21,7 @@ class Footer extends StatefulWidget {
 
 class _FooterState extends State<Footer> {
   final SessionDataService _session = SessionDataService();
+  
   Future<void> _startSession() async {
     await _session.start();
     widget.onStartSession();
@@ -45,6 +46,14 @@ class _FooterState extends State<Footer> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final padding = isMobile ? 8.0 : 16.0;
+    final fontSize = isMobile ? 12.0 : 14.0;
+    final largeFontSize = isMobile ? 16.0 : 20.0;
+    final buttonWidth = isMobile ? double.infinity : 200.0;
+    final vertGap = isMobile ? 6.0 : 8.0;
+
     return ValueListenableBuilder(
       valueListenable: Hive.box('appBox').listenable(),
       builder: (_, __, ___) {
@@ -53,32 +62,40 @@ class _FooterState extends State<Footer> {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(padding),
           decoration: const BoxDecoration(
             color: Colors.white,
             border: Border(top: BorderSide(color: Colors.blue)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Recording Time Elapsed"),
-              Text(
-                _formatTime(elapsed),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Recording Time Elapsed",
+                  style: TextStyle(fontSize: fontSize),
                 ),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed:
-                    widget.isActive 
-                      ? (isRunning ? _confirmEndSession : _startSession)
-                      : null,
-                icon: Icon(isRunning ? Icons.stop : Icons.play_arrow),
-                label: Text(isRunning ? 'End Session' : 'Start Session'),
-              ),
-            ],
+                Text(
+                  _formatTime(elapsed),
+                  style: TextStyle(
+                    fontSize: largeFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: vertGap),
+                SizedBox(
+                  width: buttonWidth,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        widget.isActive 
+                          ? (isRunning ? _confirmEndSession : _startSession)
+                          : null,
+                    icon: Icon(isRunning ? Icons.stop : Icons.play_arrow, size: isMobile ? 18 : 24),
+                    label: Text(isRunning ? 'End Session' : 'Start Session'),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

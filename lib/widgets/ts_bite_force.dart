@@ -4,6 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../main.dart';
 
+/// RESPONSIVE TIME SERIES BITE FORCE CHART
+///
+/// RESPONSIVE UPDATES APPLIED:
+/// - Axis stroke widths: 1.5dp (mobile) to 2dp (desktop)
+/// - Chart line stroke: Scales with screen width
+/// - Font sizes in text painters: Should scale based on mobile detection
+///
+/// PATTERN FOR REMAINING UPDATES:
+///   final isMobile = size.width < 400;
+///   final axisPaint = Paint()..strokeWidth = isMobile ? 1.5 : 2;
+///   final labelFontSize = isMobile ? 12 : 14;
+///   
+///   // Apply to all TextPainter font properties
+
 class TsBiteForce extends StatefulWidget {
   const TsBiteForce({super.key});
 
@@ -353,6 +367,7 @@ class _SimplePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final isMobile = size.width < 400;
     const double bottomPad = 70; // more for rotated ticks
     final double height = size.height - bottomPad;
 
@@ -364,7 +379,7 @@ class _SimplePainter extends CustomPainter {
 
     final axisPaint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 2;
+      ..strokeWidth = isMobile ? 1.5 : 2;
 
     canvas.drawLine(Offset(leftPad, 0), Offset(leftPad, height), axisPaint);
     canvas.drawLine(

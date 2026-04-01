@@ -3,6 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+/// RESPONSIVE BLE DATA TABLE
+/// 
+/// IMPLEMENTATION NOTES:
+/// - Mobile (<600dp): Use TabBarView to switch between tables
+/// - Desktop (≥600dp): Use Row with side-by-side layout
+///
+/// See end_popup.dart for responsive dialog pattern example.
+/// See footer.dart for responsive widget pattern example.
+
 class BLEdata extends StatefulWidget {
   const BLEdata({super.key});
 
