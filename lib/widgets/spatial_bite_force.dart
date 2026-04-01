@@ -122,18 +122,37 @@ class SpatialBiteForce extends StatelessWidget {
   Widget _buildArch(List<double> vals, {required bool isTop}) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = MediaQuery.of(context).size.width < 600;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isMobile = screenWidth < 600;
+        final isVerySmall = screenWidth < 380;
         // Responsive sizing based on available width
         final availableWidth = constraints.maxWidth;
-        final boxWidth = (availableWidth / vals.length).clamp(
-          isMobile ? 28.0 : 40.0,
-          isMobile ? 45.0 : 65.0,
-        );
-        final boxHeight = boxWidth * 1.55; // maintain aspect ratio
-        final spacing = max(
-          isMobile ? 0.5 : 1.0,
-          boxWidth * (isMobile ? 0.015 : 0.03),
-        ); // scale spacing proportionally
+      final sideInset = isVerySmall
+        ? 4.0
+        : isMobile
+        ? 8.0
+        : 12.0;
+      final spacing = isVerySmall
+        ? 0.0
+        : isMobile
+        ? 0.25
+        : 1.0;
+      final fitWidth =
+        (availableWidth - sideInset * 2 - spacing * (vals.length - 1)) /
+        vals.length;
+      final boxWidth = fitWidth.clamp(
+        isVerySmall
+          ? 18.0
+          : isMobile
+          ? 22.0
+          : 32.0,
+        isVerySmall
+          ? 34.0
+          : isMobile
+          ? 38.0
+          : 65.0,
+      );
+        final boxHeight = boxWidth * (isMobile ? 1.45 : 1.55);
 
         return LayoutBuilder(
           builder: (context, innerConstraints) {
@@ -146,16 +165,35 @@ class SpatialBiteForce extends StatelessWidget {
 
             // Calculate radius Y to create a smooth ellipse that contains all boxes
             // Use a more rounded curve (larger radius) by increasing the factor
-            final radiusY = (boxHeight * (isMobile ? 0.85 : 1.2)).clamp(
-              isMobile ? 48.0 : 80.0,
-              maxHalfHeight * (isMobile ? 0.75 : 0.9),
+            final radiusY = (boxHeight *
+                    (isVerySmall
+                        ? 0.50
+                        : isMobile
+                        ? 0.65
+                        : 1.2))
+                .clamp(
+              isVerySmall
+                  ? 26.0
+                  : isMobile
+                  ? 36.0
+                  : 80.0,
+              maxHalfHeight *
+                  (isVerySmall
+                      ? 0.55
+                      : isMobile
+                      ? 0.68
+                      : 0.9),
             );
 
-            final startX = (innerConstraints.maxWidth - totalWidth) / 2;
+            final startX = max(
+              sideInset,
+              (innerConstraints.maxWidth - totalWidth) / 2,
+            );
 
             return SizedBox(
-              height: radiusY + boxHeight * (isMobile ? 0.9 : 1.0),
+              height: radiusY + boxHeight * (isMobile ? 0.78 : 1.0),
               child: Stack(
+                clipBehavior: Clip.none,
                 children: List.generate(vals.length, (i) {
                   final x = startX + i * (boxWidth + spacing);
 
@@ -194,9 +232,9 @@ class SpatialBiteForce extends StatelessWidget {
     const textColor = Colors.white;
 
     // Scale text sizes based on box dimensions
-    final sensorFontSize = (boxWidth * 0.33).clamp(14.0, 24.0);
-    final valueFontSize = (boxWidth * 0.44).clamp(18.0, 32.0);
-    final unitFontSize = (boxWidth * 0.16).clamp(10.0, 14.0);
+    final sensorFontSize = (boxWidth * 0.32).clamp(10.0, 24.0);
+    final valueFontSize = (boxWidth * 0.40).clamp(13.0, 32.0);
+    final unitFontSize = (boxWidth * 0.16).clamp(8.0, 14.0);
 
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(begin: Colors.grey.shade300, end: color),
@@ -215,6 +253,8 @@ class SpatialBiteForce extends StatelessWidget {
             children: [
               Text(
                 '$sensorNumber',
+                maxLines: 1,
+                softWrap: false,
                 style: TextStyle(
                   fontSize: sensorFontSize,
                   fontWeight: FontWeight.bold,
@@ -226,6 +266,8 @@ class SpatialBiteForce extends StatelessWidget {
               const SizedBox(height: 1),
               Text(
                 value.toStringAsFixed(0),
+                maxLines: 1,
+                softWrap: false,
                 style: TextStyle(
                   fontSize: valueFontSize,
                   fontWeight: FontWeight.bold,
@@ -237,6 +279,8 @@ class SpatialBiteForce extends StatelessWidget {
               const SizedBox(height: 0),
               Text(
                 'N',
+                maxLines: 1,
+                softWrap: false,
                 style: TextStyle(
                   fontSize: unitFontSize,
                   color: textColor.withOpacity(0.85),

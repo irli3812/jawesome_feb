@@ -302,7 +302,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Newtons',
+                    'Newtons (N)',
                     style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                   ),
                 ],
