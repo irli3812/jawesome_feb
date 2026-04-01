@@ -20,6 +20,47 @@ class RecordMouthOpening extends StatefulWidget {
 class _RecordMouthOpeningState extends State<RecordMouthOpening> {
   ViewMode _viewMode = ViewMode.meter;
 
+  Widget _modeButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onPressed,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 52,
+          height: 40,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              backgroundColor: selected ? scheme.primary : Colors.grey.shade300,
+              foregroundColor: selected ? Colors.white : Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Icon(icon, size: 20),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            color: selected ? scheme.primary : Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
@@ -32,46 +73,40 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ===== Title + buttons =====
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const Text(
-                'Select Mode',
-                style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: () => setState(() {
-                  _viewMode = ViewMode.meter;
-                }),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _viewMode == ViewMode.meter
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey.shade300,
-                  foregroundColor: _viewMode == ViewMode.meter
-                      ? Colors.white
-                      : Colors.black,
+          Align(
+            alignment: Alignment.centerRight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  'Select Mode',
+                  style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                 ),
-                icon: const Icon(Icons.speed),
-                label: const Text("Meter"),
-              ),
-              const SizedBox(width: 6),
-              ElevatedButton.icon(
-                onPressed: () => setState(() {
-                  _viewMode = ViewMode.timeseries;
-                }),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _viewMode == ViewMode.timeseries
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey.shade300,
-                  foregroundColor: _viewMode == ViewMode.timeseries
-                      ? Colors.white
-                      : Colors.black,
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    _modeButton(
+                      context: context,
+                      icon: Icons.speed,
+                      label: 'Meter',
+                      selected: _viewMode == ViewMode.meter,
+                      onPressed: () => setState(() => _viewMode = ViewMode.meter),
+                    ),
+                    _modeButton(
+                      context: context,
+                      icon: Icons.show_chart,
+                      label: 'Graph',
+                      selected: _viewMode == ViewMode.timeseries,
+                      onPressed: () =>
+                          setState(() => _viewMode = ViewMode.timeseries),
+                    ),
+                  ],
                 ),
-                icon: const Icon(Icons.show_chart),
-                label: const Text("Graph"),
-              ),
-            ],
+              ],
+            ),
           ),
 
           const SizedBox(height: 3),

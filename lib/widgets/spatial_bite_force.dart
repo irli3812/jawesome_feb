@@ -84,10 +84,11 @@ class SpatialBiteForce extends StatelessWidget {
   }
 
   Widget _buildLegend(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Column(
       children: [
         Container(
-          height: 22,
+          height: isMobile ? 16 : 22,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             gradient: const LinearGradient(
@@ -95,21 +96,21 @@ class SpatialBiteForce extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isMobile ? 6 : 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               '${bfGaugeMin.toStringAsFixed(0)} N',
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: isMobile ? 13 : 18),
             ),
             Text(
               '${((bfGaugeMin + bfGaugeMax) / 2).toStringAsFixed(0)} N',
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: isMobile ? 13 : 18),
             ),
             Text(
               '${bfGaugeMax.toStringAsFixed(0)} N',
-              style: const TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: isMobile ? 13 : 18),
             ),
           ],
         ),
@@ -121,13 +122,17 @@ class SpatialBiteForce extends StatelessWidget {
   Widget _buildArch(List<double> vals, {required bool isTop}) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isMobile = MediaQuery.of(context).size.width < 600;
         // Responsive sizing based on available width
         final availableWidth = constraints.maxWidth;
-        final boxWidth = (availableWidth / vals.length).clamp(40.0, 65.0);
+        final boxWidth = (availableWidth / vals.length).clamp(
+          isMobile ? 28.0 : 40.0,
+          isMobile ? 45.0 : 65.0,
+        );
         final boxHeight = boxWidth * 1.55; // maintain aspect ratio
         final spacing = max(
-          1.0,
-          boxWidth * 0.03,
+          isMobile ? 0.5 : 1.0,
+          boxWidth * (isMobile ? 0.015 : 0.03),
         ); // scale spacing proportionally
 
         return LayoutBuilder(
@@ -141,12 +146,15 @@ class SpatialBiteForce extends StatelessWidget {
 
             // Calculate radius Y to create a smooth ellipse that contains all boxes
             // Use a more rounded curve (larger radius) by increasing the factor
-            final radiusY = (boxHeight * 1.2).clamp(80.0, maxHalfHeight * 0.9);
+            final radiusY = (boxHeight * (isMobile ? 0.85 : 1.2)).clamp(
+              isMobile ? 48.0 : 80.0,
+              maxHalfHeight * (isMobile ? 0.75 : 0.9),
+            );
 
             final startX = (innerConstraints.maxWidth - totalWidth) / 2;
 
             return SizedBox(
-              height: radiusY + boxHeight,
+              height: radiusY + boxHeight * (isMobile ? 0.9 : 1.0),
               child: Stack(
                 children: List.generate(vals.length, (i) {
                   final x = startX + i * (boxWidth + spacing);
