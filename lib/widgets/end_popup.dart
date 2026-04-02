@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import '../services/save_session.dart';
 import '../services/session_data_service.dart';
@@ -23,6 +25,7 @@ class EndSessionPopup extends StatelessWidget {
 
     final String? sessionName = await showDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Save Session Name'),
@@ -35,8 +38,12 @@ class EndSessionPopup extends StatelessWidget {
             ),
           ),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
