@@ -26,24 +26,23 @@ class SessionRow {
 /// Session data service (singleton)
 /// ─────────────────────────────────────────────
 class SessionDataService extends ChangeNotifier {
+  // Hive keys
+  static const _timeKey = 'time_series';
 
-// Hive keys
-static const _timeKey = 'time_series';
+  static const _IOcurrentSeriesKey = 'mouth_opening_current_series';
+  static const _IOavgSeriesKey = 'mouth_opening_avg_series';
+  static const _IOmaxSeriesKey = 'mouth_opening_max_series';
 
-static const _IOcurrentSeriesKey = 'mouth_opening_current_series';
-static const _IOavgSeriesKey = 'mouth_opening_avg_series';
-static const _IOmaxSeriesKey = 'mouth_opening_max_series';
+  static const _biteCurrentSeriesKey = 'bite_forces_current_series';
+  static const _biteAvgSeriesKey = 'bite_force_avg_series';
+  static const _biteMaxSeriesKey = 'bite_force_max_series';
 
-static const _biteCurrentSeriesKey = 'bite_forces_current_series';
-static const _biteAvgSeriesKey = 'bite_force_avg_series';
-static const _biteMaxSeriesKey = 'bite_force_max_series';
-
-static const _batteryKey = 'batteryPercent';
-static const _sessionStartTimeKey = 'session_start_time';
+  static const _batteryKey = 'batteryPercent';
+  static const _sessionStartTimeKey = 'session_start_time';
+  static const _sessionStartTimePreciseKey = 'session_start_time_precise';
 
   // Singleton
-  static final SessionDataService _instance =
-      SessionDataService._internal();
+  static final SessionDataService _instance = SessionDataService._internal();
   factory SessionDataService() => _instance;
   SessionDataService._internal();
 
@@ -57,48 +56,47 @@ static const _sessionStartTimeKey = 'session_start_time';
 
   int? _firstDeviceMillis;
 
-  bool get isRunning =>
-      _box.get('is_recording', defaultValue: false) as bool;
+  bool get isRunning => _box.get('is_recording', defaultValue: false) as bool;
 
   int get elapsedMs {
-    final List times =
-        List.from(_box.get('time_series', defaultValue: []));
+    final List times = List.from(_box.get('time_series', defaultValue: []));
     return times.isEmpty ? 0 : (times.last as num).toInt();
   }
 
   List<SessionRow> get rows {
-    final List raw =
-        List.from(_box.get('session', defaultValue: []));
+    final List raw = List.from(_box.get('session', defaultValue: []));
 
-    return raw.map<SessionRow>((e) {
-      return SessionRow(
-        elapsedMs: (e['time_ms'] as num).toInt(),
-        biteForce: ((e['avg_bite_force'] ?? 0) as num).toInt(),
-        mouthOpening: (e['mouth_opening'] as num).toInt(),
-      );
-    }).toList(growable: false);
+    return raw
+        .map<SessionRow>((e) {
+          return SessionRow(
+            elapsedMs: (e['time_ms'] as num).toInt(),
+            biteForce: ((e['avg_bite_force'] ?? 0) as num).toInt(),
+            mouthOpening: (e['mouth_opening'] as num).toInt(),
+          );
+        })
+        .toList(growable: false);
   }
 
   /// ─────────────────────────────────────────────
   /// BLE hookup
   /// ─────────────────────────────────────────────
   void attachBleCharacteristics(
-  BluetoothCharacteristic dataCharacteristic,
-  //BluetoothCharacteristic commandCharacteristic,
-) {
-  _dataCharacteristic = dataCharacteristic;
-  /*_commandCharacteristic = commandCharacteristic;*/
+    BluetoothCharacteristic dataCharacteristic,
+    //BluetoothCharacteristic commandCharacteristic,
+  ) {
+    _dataCharacteristic = dataCharacteristic;
+    /*_commandCharacteristic = commandCharacteristic;*/
 
-  debugPrint('🔵 BLE characteristics attached');
-  //debugPrint('DATA UUID: ${_dataCharacteristic?.uuid}');
-  /*debugPrint('CMD  UUID: ${_commandCharacteristic?.uuid}');*/
+    debugPrint('🔵 BLE characteristics attached');
+    //debugPrint('DATA UUID: ${_dataCharacteristic?.uuid}');
+    /*debugPrint('CMD  UUID: ${_commandCharacteristic?.uuid}');*/
 
-  _bleSub?.cancel();
+    _bleSub?.cancel();
 
-  _bleSub = dataCharacteristic.lastValueStream.listen(_onBleData);
+    _bleSub = dataCharacteristic.lastValueStream.listen(_onBleData);
 
-  dataCharacteristic.setNotifyValue(true);
-}
+    dataCharacteristic.setNotifyValue(true);
+  }
 
   /// ─────────────────────────────────────────────
   /// BLE data handler
@@ -144,17 +142,19 @@ static const _sessionStartTimeKey = 'session_start_time';
     final int elapsed = deviceMillis - _firstDeviceMillis!;
     if (elapsed < 0) return;
 
-    final List times =
-        List.from(_box.get(_timeKey, defaultValue: []));
+    final List times = List.from(_box.get(_timeKey, defaultValue: []));
     times.add(elapsed);
     _box.put(_timeKey, times);
 
-    final List IOcurrentSeries =
-        List.from(_box.get(_IOcurrentSeriesKey, defaultValue: []));
-    final List avgSeries =
-        List.from(_box.get(_IOavgSeriesKey, defaultValue: []));
-    final List maxSeries =
-        List.from(_box.get(_IOmaxSeriesKey, defaultValue: []));
+    final List IOcurrentSeries = List.from(
+      _box.get(_IOcurrentSeriesKey, defaultValue: []),
+    );
+    final List avgSeries = List.from(
+      _box.get(_IOavgSeriesKey, defaultValue: []),
+    );
+    final List maxSeries = List.from(
+      _box.get(_IOmaxSeriesKey, defaultValue: []),
+    );
 
     IOcurrentSeries.add(angle);
     avgSeries.add(avgAngle);
@@ -164,12 +164,15 @@ static const _sessionStartTimeKey = 'session_start_time';
     _box.put(_IOavgSeriesKey, avgSeries);
     _box.put(_IOmaxSeriesKey, maxSeries);
 
-    final List biteCurrentSeries =
-        List.from(_box.get(_biteCurrentSeriesKey, defaultValue: []));
-    final List avgBites =
-        List.from(_box.get(_biteAvgSeriesKey, defaultValue: []));
-    final List maxBites =
-        List.from(_box.get(_biteMaxSeriesKey, defaultValue: []));
+    final List biteCurrentSeries = List.from(
+      _box.get(_biteCurrentSeriesKey, defaultValue: []),
+    );
+    final List avgBites = List.from(
+      _box.get(_biteAvgSeriesKey, defaultValue: []),
+    );
+    final List maxBites = List.from(
+      _box.get(_biteMaxSeriesKey, defaultValue: []),
+    );
 
     biteCurrentSeries.add(bites);
     avgBites.add(avgBite);
@@ -179,8 +182,7 @@ static const _sessionStartTimeKey = 'session_start_time';
     _box.put(_biteAvgSeriesKey, avgBites);
     _box.put(_biteMaxSeriesKey, maxBites);
 
-    final List session =
-        List.from(_box.get('session', defaultValue: []));
+    final List session = List.from(_box.get('session', defaultValue: []));
 
     session.add({
       'time_ms': elapsed,
@@ -226,7 +228,9 @@ static const _sessionStartTimeKey = 'session_start_time';
     _box.put(_biteAvgSeriesKey, []);
     _box.put(_biteMaxSeriesKey, []);
     _box.put('session', []);
-    _box.put(_sessionStartTimeKey, _formatTimeOfDay(DateTime.now()));
+    final now = DateTime.now();
+    _box.put(_sessionStartTimeKey, _formatTimeOfDay(now));
+    _box.put(_sessionStartTimePreciseKey, _formatTimeOfDayWithSeconds(now));
 
     _box.put('is_recording', true);
 
@@ -248,6 +252,7 @@ static const _sessionStartTimeKey = 'session_start_time';
     _box.delete(_biteAvgSeriesKey);
     _box.delete(_biteMaxSeriesKey);
     _box.delete(_sessionStartTimeKey);
+    _box.delete(_sessionStartTimePreciseKey);
     _box.put('is_recording', false);
     notifyListeners();
   }
@@ -257,6 +262,14 @@ static const _sessionStartTimeKey = 'session_start_time';
     final String minutes = dt.minute.toString().padLeft(2, '0');
     final String suffix = dt.hour >= 12 ? 'PM' : 'AM';
     return '${hour12.toString()}:$minutes$suffix';
+  }
+
+  String _formatTimeOfDayWithSeconds(DateTime dt) {
+    final int hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final String minutes = dt.minute.toString().padLeft(2, '0');
+    final String seconds = dt.second.toString().padLeft(2, '0');
+    final String suffix = dt.hour >= 12 ? 'PM' : 'AM';
+    return '${hour12.toString()}:$minutes:$seconds$suffix';
   }
 
   @override

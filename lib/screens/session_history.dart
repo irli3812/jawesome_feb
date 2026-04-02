@@ -29,7 +29,10 @@ class _SessionHistoryState extends State<SessionHistory> {
   }
 
   bool _isDefaultSessionName(String name, DateTime createdAt) {
-    return name.trim() == _defaultNameForDate(createdAt);
+    final trimmed = name.trim();
+    final base = _defaultNameForDate(createdAt);
+    if (trimmed == base) return true;
+    return RegExp('^${RegExp.escape(base)}_\\(\\d+\\)\$').hasMatch(trimmed);
   }
 
   Map<dynamic, int> _sessionNumbersByKey(
@@ -78,6 +81,47 @@ class _SessionHistoryState extends State<SessionHistory> {
     return '--';
   }
 
+  int? _secondsSinceMidnight(String? value) {
+    if (value == null) return null;
+
+    final raw = value.trim().toUpperCase();
+    final match = RegExp(
+      r'^(\d{1,2}):(\d{2})(?::(\d{2}))?(AM|PM)$',
+    ).firstMatch(raw);
+    if (match == null) return null;
+
+    final hourRaw = int.tryParse(match.group(1)!);
+    final minute = int.tryParse(match.group(2)!);
+    final second = int.tryParse(match.group(3) ?? '0');
+    final meridiem = match.group(4)!;
+
+    if (hourRaw == null || minute == null || second == null) return null;
+    if (hourRaw < 1 || hourRaw > 12 || minute < 0 || minute > 59) return null;
+    if (second < 0 || second > 59) return null;
+
+    var hour24 = hourRaw % 12;
+    if (meridiem == 'PM') {
+      hour24 += 12;
+    }
+
+    return (hour24 * 3600) + (minute * 60) + second;
+  }
+
+  String _durationFromTimes(String? startTimePrecise, String? endTimePrecise) {
+    final startSeconds = _secondsSinceMidnight(startTimePrecise);
+    final endSeconds = _secondsSinceMidnight(endTimePrecise);
+    if (startSeconds == null || endSeconds == null) return '--:--';
+
+    var deltaSeconds = endSeconds - startSeconds;
+    if (deltaSeconds < 0) {
+      deltaSeconds += 24 * 3600;
+    }
+
+    final minutes = (deltaSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (deltaSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
   void _showSessionDetails(
     BuildContext context, {
     required String name,
@@ -85,12 +129,13 @@ class _SessionHistoryState extends State<SessionHistory> {
     required int sessionNumber,
     required String? startTime,
     required String? endTime,
+    required String? startTimePrecise,
+    required String? endTimePrecise,
   }) {
     final dateStr = _formatDate(createdAt);
     final useDefaultTitle = _isDefaultSessionName(name, createdAt);
-    final title = useDefaultTitle
-        ? '$dateStr - Session $sessionNumber'
-        : '$name - $dateStr - Session $sessionNumber';
+    final durationText = _durationFromTimes(startTimePrecise, endTimePrecise);
+    final title = '$dateStr - Session $sessionNumber';
 
     showDialog(
       context: context,
@@ -101,6 +146,16 @@ class _SessionHistoryState extends State<SessionHistory> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(title),
+              if (!useDefaultTitle) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Custom name: $name',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
               const SizedBox(height: 6),
               Row(
                 children: [
@@ -126,12 +181,24 @@ class _SessionHistoryState extends State<SessionHistory> {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Duration: $durationText',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
             ],
           ),
           content: const Text('Session details view coming soon.'),
           actions: [
-            TextButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
               child: const Text('Close'),
             ),
           ],
@@ -276,7 +343,10 @@ class _SessionHistoryState extends State<SessionHistory> {
                     );
                     final startTime = map['start_time'] as String?;
                     final endTime = map['end_time'] as String?;
-                    final displayName = '${name}_($sessionNumber)';
+                    final startTimePrecise =
+                        map['start_time_precise'] as String?;
+                    final endTimePrecise = map['end_time_precise'] as String?;
+                    final displayName = name;
                     final metricText = '$maxBite/$maxMouth';
 
                     return SizedBox(
@@ -302,6 +372,8 @@ class _SessionHistoryState extends State<SessionHistory> {
                             sessionNumber: sessionNumber,
                             startTime: startTime,
                             endTime: endTime,
+                            startTimePrecise: startTimePrecise,
+                            endTimePrecise: endTimePrecise,
                           );
                         },
                         style: ElevatedButton.styleFrom(
