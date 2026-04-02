@@ -417,7 +417,7 @@ class _BiteForceGaugePainter extends CustomPainter {
       arcPaint,
     );
 
-    // ===== Tick marks & labels (every 10 N) =====
+    // ===== Tick marks (every 10 N) =====
     final tickPaint = Paint()
       ..color = Colors.black
       ..strokeWidth = isMobile ? 1.5 : 2;
@@ -431,8 +431,9 @@ class _BiteForceGaugePainter extends CustomPainter {
 
       final bool major = step % bfMajorDivisions == 0;
 
-      final double startR = radius * (major ? 0.75 : 0.82);
-      final double endR = radius * 0.9;
+      // Draw ticks across the arc band so they sit on top of the meter colors.
+      final double startR = radius * (major ? 0.88 : 0.92);
+      final double endR = radius * (major ? 1.03 : 1.0);
 
       final Offset start = Offset(
         center.dx + cos(angle) * startR,
@@ -445,29 +446,6 @@ class _BiteForceGaugePainter extends CustomPainter {
       );
 
       canvas.drawLine(start, end, tickPaint);
-
-      if (major) {
-        final tp = TextPainter(
-          text: TextSpan(
-            text: valueTick.round().toString(),
-            style: TextStyle(
-              fontSize: isMobile ? 18 : 24,
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        // Place labels below/inward from ticks to avoid overlapping arc colors.
-        final double labelRadius = radius * 0.62;
-        final Offset pos = Offset(
-          center.dx + cos(angle) * labelRadius - tp.width / 2,
-          center.dy + sin(angle) * labelRadius - tp.height / 2,
-        );
-
-        tp.paint(canvas, pos);
-      }
     }
 
     // ===== Needle =====
@@ -481,12 +459,38 @@ class _BiteForceGaugePainter extends CustomPainter {
       ..strokeWidth = isMobile ? 2 : 3;
 
     final needleEnd = Offset(
-      center.dx + cos(angle) * radius * 0.8,
-      center.dy + sin(angle) * radius * 0.8,
+      center.dx + cos(angle) * radius * 0.62,
+      center.dy + sin(angle) * radius * 0.62,
     );
 
     canvas.drawLine(center, needleEnd, needlePaint);
     canvas.drawCircle(center, isMobile ? 4 : 6, Paint()..color = Colors.black);
+
+    // ===== Numeric labels right under tick marks =====
+    for (int step = 0; step <= bfMinorDivisions; step += bfMajorDivisions) {
+      final double valueTick =
+          bfGaugeMin + (step / bfMinorDivisions) * (bfGaugeMax - bfGaugeMin);
+      final double t = step / bfMinorDivisions;
+      final double labelAngle = pi + t * pi;
+      final tp = TextPainter(
+        text: TextSpan(
+          text: valueTick.round().toString(),
+          style: TextStyle(
+            fontSize: isMobile ? 16 : 20,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      final double labelRadius = radius * 0.72;
+      final Offset pos = Offset(
+        center.dx + cos(labelAngle) * labelRadius - tp.width / 2,
+        center.dy + sin(labelAngle) * labelRadius - tp.height / 2,
+      );
+      tp.paint(canvas, pos);
+    }
   }
 
   @override
