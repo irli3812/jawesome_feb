@@ -124,6 +124,7 @@ class _SessionHistoryState extends State<SessionHistory> {
 
   void _showSessionDetails(
     BuildContext context, {
+    required dynamic sessionKey,
     required String name,
     required DateTime createdAt,
     required int sessionNumber,
@@ -192,14 +193,41 @@ class _SessionHistoryState extends State<SessionHistory> {
             ],
           ),
           content: const Text('Session details view coming soon.'),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            ElevatedButton(
+            ElevatedButton.icon(
+              onPressed: () async {
+                final box = Hive.box(SaveSessionService.boxName);
+                await box.delete(sessionKey);
+
+                if (!mounted) return;
+                setState(() {
+                  _selectedKeys.remove(sessionKey);
+                });
+
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Session deleted')),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Delete'),
+            ),
+            ElevatedButton.icon(
               onPressed: () => Navigator.of(dialogContext).pop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
               ),
-              child: const Text('Close'),
+              icon: const Icon(Icons.close, size: 18),
+              label: const Text('Close'),
             ),
           ],
         );
@@ -367,6 +395,7 @@ class _SessionHistoryState extends State<SessionHistory> {
 
                           _showSessionDetails(
                             context,
+                            sessionKey: entries[index].key,
                             name: name,
                             createdAt: createdAt,
                             sessionNumber: sessionNumber,
