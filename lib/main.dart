@@ -19,12 +19,12 @@ void main() async {
 /// ───────────────────────────────────────────────
 /// RESPONSIVE DESIGN - IMPLEMENTATION STATUS
 /// ───────────────────────────────────────────────
-/// 
+///
 /// ✅ COMPLETED UPDATES (9 files):
 /// 1. lib/main.dart - ResponsiveSize utility class
 /// 2. lib/widgets/footer.dart - Footer responsive sizing
 /// 3. lib/screens/record_mouth_opening.dart - Gauge painter responsive
-/// 4. lib/screens/record_bite_force.dart - Gauge painter responsive  
+/// 4. lib/screens/record_bite_force.dart - Gauge painter responsive
 /// 5. lib/widgets/ts_mouth_opening.dart - Chart axis responsive
 /// 6. lib/widgets/ts_bite_force.dart - Chart axis responsive
 /// 7. lib/screens/session_history.dart - Full responsive remake
@@ -251,7 +251,8 @@ class _MyAppState extends State<MyApp> {
                   const SizedBox(width: 8),
                   Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
                     child: BluetoothButton(
                       isConnected: isBluetoothConnected,
                       onConnectionChange: (isConnected) {
@@ -411,8 +412,10 @@ class _PageNavigationState extends State<PageNavigation> {
     }
 
     final totalTabsWidth = widths.fold<double>(0.0, (sum, w) => sum + w);
-    double currentPosition =
-        max(0.0, (viewportWidth - totalTabsWidth) / 2); // center when short
+    double currentPosition = max(
+      0.0,
+      (viewportWidth - totalTabsWidth) / 2,
+    ); // center when short
 
     for (final tabWidth in widths) {
       _tabPositions.add(currentPosition);
@@ -422,13 +425,17 @@ class _PageNavigationState extends State<PageNavigation> {
   }
 
   void _scrollActiveTabIntoView() {
-    if (!_scrollController.hasClients || _viewportWidth <= 0 || _tabWidths.isEmpty) {
+    if (!_scrollController.hasClients ||
+        _viewportWidth <= 0 ||
+        _tabWidths.isEmpty) {
       return;
     }
 
     final center = _indicatorPosition + (_indicatorWidth / 2);
-    final targetOffset =
-        (center - (_viewportWidth / 2)).clamp(0.0, _scrollController.position.maxScrollExtent);
+    final targetOffset = (center - (_viewportWidth / 2)).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
 
     // Jump during drag updates keeps nav synced with page swipe.
     _scrollController.jumpTo(targetOffset);
@@ -505,9 +512,7 @@ class _PageNavigationState extends State<PageNavigation> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: _viewportWidth,
-                  ),
+                  constraints: BoxConstraints(minWidth: _viewportWidth),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(widget.pages.length, (index) {
@@ -547,8 +552,11 @@ class _PageNavigationState extends State<PageNavigation> {
               ), // Animated underline that follows page swipes
               Positioned(
                 bottom: 0,
-                left: _indicatorPosition -
-                    (_scrollController.hasClients ? _scrollController.offset : 0),
+                left:
+                    _indicatorPosition -
+                    (_scrollController.hasClients
+                        ? _scrollController.offset
+                        : 0),
                 child: Container(
                   height: 2,
                   width: _indicatorWidth,

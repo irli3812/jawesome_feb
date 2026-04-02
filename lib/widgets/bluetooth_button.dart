@@ -15,7 +15,7 @@ import 'package:permission_handler/permission_handler.dart';
 /// PATTERN TO APPLY:
 ///   final screenWidth = MediaQuery.of(context).size.width;
 ///   final isMobile = screenWidth < 600;
-///   
+///
 ///   minimumSize: isMobile ? const Size(44, 44) : const Size(48, 48),
 ///   child: Icon(..., size: isMobile ? 20 : 24)
 
@@ -68,12 +68,14 @@ class BluetoothButton extends StatelessWidget {
       onPressed: () => _handleConnect(context),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0072B2),
+        shape: const CircleBorder(),
         padding: EdgeInsets.zero,
         minimumSize: const Size(48, 48),
+        maximumSize: const Size(48, 48),
       ),
       child: Icon(
         isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-        color: const Color(0xFF0072B2),
         size: 24,
       ),
     );

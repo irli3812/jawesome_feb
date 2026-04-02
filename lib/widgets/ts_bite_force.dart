@@ -15,7 +15,7 @@ import '../main.dart';
 ///   final isMobile = size.width < 400;
 ///   final axisPaint = Paint()..strokeWidth = isMobile ? 1.5 : 2;
 ///   final labelFontSize = isMobile ? 12 : 14;
-///   
+///
 ///   // Apply to all TextPainter font properties
 
 class TsBiteForce extends StatefulWidget {
@@ -140,6 +140,8 @@ class _TsBiteForceState extends State<TsBiteForce> {
   Widget _buildRegionChip(int i, String label, Function setDialogState) {
     final color = _SimplePainter.colors[i];
     final selected = selectedSensors.contains(i);
+    final background = color;
+    const foreground = Colors.white;
 
     return SizedBox(
       width: double.infinity,
@@ -160,8 +162,8 @@ class _TsBiteForceState extends State<TsBiteForce> {
           setDialogState(() {});
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: color,
+          backgroundColor: background,
+          foregroundColor: foreground,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
         child: Row(
@@ -173,16 +175,16 @@ class _TsBiteForceState extends State<TsBiteForce> {
                 label,
                 textAlign: TextAlign.center,
                 softWrap: true,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: foreground,
                 ),
               ),
             ),
             if (selected) ...[
               const SizedBox(width: 6),
-              Icon(Icons.check, size: 18, color: color),
+              Icon(Icons.check, size: 18, color: foreground),
             ],
           ],
         ),
@@ -446,7 +448,7 @@ class _SimplePainter extends CustomPainter {
 
     final yLabel = TextPainter(
       text: const TextSpan(
-        text: "Average bite force of aligned sensors (Newtons)",
+        text: "Average bite force of region(s) (N)",
         style: TextStyle(
           color: Colors.black,
           fontSize: 18,

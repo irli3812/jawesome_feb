@@ -32,7 +32,9 @@ class _SessionHistoryState extends State<SessionHistory> {
     return name.trim() == _defaultNameForDate(createdAt);
   }
 
-  Map<dynamic, int> _sessionNumbersByKey(List<MapEntry<dynamic, dynamic>> entries) {
+  Map<dynamic, int> _sessionNumbersByKey(
+    List<MapEntry<dynamic, dynamic>> entries,
+  ) {
     final sortedAsc = List<MapEntry<dynamic, dynamic>>.from(entries)
       ..sort((a, b) {
         final aMap = a.value is Map ? a.value as Map : <dynamic, dynamic>{};
@@ -49,7 +51,9 @@ class _SessionHistoryState extends State<SessionHistory> {
     final Map<dynamic, int> result = {};
 
     for (final entry in sortedAsc) {
-      final map = entry.value is Map ? entry.value as Map : <dynamic, dynamic>{};
+      final map = entry.value is Map
+          ? entry.value as Map
+          : <dynamic, dynamic>{};
       final createdMs = (map['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
       final createdAt = createdMs > 0
           ? DateTime.fromMillisecondsSinceEpoch(createdMs)
@@ -157,9 +161,9 @@ class _SessionHistoryState extends State<SessionHistory> {
     final isMobile = screenWidth < 600;
     final padding = isMobile ? 12.0 : 16.0;
     final nameSize = isMobile ? 14.0 : 16.0;
-    final metricSize = isMobile ? 15.0 : 18.0;
+    final metricSize = isMobile ? 14.0 : 16.0;
     final buttonPadding = isMobile ? 10.0 : 14.0;
-    final buttonHeight = isMobile ? 76.0 : 88.0;
+    final buttonHeight = isMobile ? 58.0 : 66.0;
     final actionButtonHeight = isMobile ? 34.0 : 38.0;
     final actionButtonFont = isMobile ? 12.0 : 13.0;
     final box = Hive.box(SaveSessionService.boxName);
@@ -196,7 +200,10 @@ class _SessionHistoryState extends State<SessionHistory> {
                       }
                     });
                   },
-                  icon: Icon(_selectionMode ? Icons.close : Icons.checklist, size: 16),
+                  icon: Icon(
+                    _selectionMode ? Icons.close : Icons.checklist,
+                    size: 16,
+                  ),
                   label: Text(
                     _selectionMode ? 'Done' : 'Select',
                     style: TextStyle(fontSize: actionButtonFont),
@@ -231,8 +238,10 @@ class _SessionHistoryState extends State<SessionHistory> {
                   final dynamic bRaw = b.value;
                   final aMap = aRaw is Map ? aRaw : <dynamic, dynamic>{};
                   final bMap = bRaw is Map ? bRaw : <dynamic, dynamic>{};
-                  final aMs = (aMap['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
-                  final bMs = (bMap['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
+                  final aMs =
+                      (aMap['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
+                  final bMs =
+                      (bMap['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
                   if (aMs == bMs) {
                     return (b.key as int).compareTo(a.key as int);
                   }
@@ -247,21 +256,28 @@ class _SessionHistoryState extends State<SessionHistory> {
                     final dynamic raw = entries[index].value;
                     final map = raw is Map ? raw : <dynamic, dynamic>{};
 
-                    final name = (map['name'] as String?)?.trim().isNotEmpty == true
+                    final name =
+                        (map['name'] as String?)?.trim().isNotEmpty == true
                         ? map['name'] as String
                         : 'Unnamed Session';
 
-                    final createdMs = (map['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
+                    final createdMs =
+                        (map['created_at_epoch_ms'] as num?)?.toInt() ?? 0;
                     final createdAt = createdMs > 0
                         ? DateTime.fromMillisecondsSinceEpoch(createdMs)
                         : DateTime.now();
-                    final sessionNumber = sessionNumsByKey[entries[index].key] ?? 1;
+                    final sessionNumber =
+                        sessionNumsByKey[entries[index].key] ?? 1;
 
                     final maxBite = _metricValue(map['max_bite_force'], 'N');
-                    final maxMouth = _metricValue(map['max_mouth_opening'], 'mm');
+                    final maxMouth = _metricValue(
+                      map['max_mouth_opening'],
+                      'mm',
+                    );
                     final startTime = map['start_time'] as String?;
                     final endTime = map['end_time'] as String?;
                     final displayName = '${name}_($sessionNumber)';
+                    final metricText = '$maxBite/$maxMouth';
 
                     return SizedBox(
                       height: buttonHeight,
@@ -291,7 +307,7 @@ class _SessionHistoryState extends State<SessionHistory> {
                         style: ElevatedButton.styleFrom(
                           padding: EdgeInsets.symmetric(
                             horizontal: buttonPadding,
-                            vertical: buttonPadding * 0.8,
+                            vertical: buttonPadding * 0.45,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -311,31 +327,19 @@ class _SessionHistoryState extends State<SessionHistory> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  maxBite,
-                                  style: TextStyle(
-                                    fontSize: metricSize,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(height: isMobile ? 2 : 4),
-                                Text(
-                                  maxMouth,
-                                  style: TextStyle(
-                                    fontSize: metricSize,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              metricText,
+                              style: TextStyle(
+                                fontSize: metricSize,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             if (_selectionMode) ...[
                               const SizedBox(width: 8),
                               Checkbox(
-                                value: _selectedKeys.contains(entries[index].key),
+                                value: _selectedKeys.contains(
+                                  entries[index].key,
+                                ),
                                 onChanged: (_) {
                                   setState(() {
                                     final key = entries[index].key;
