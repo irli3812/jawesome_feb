@@ -177,7 +177,19 @@ class _DeviceSelectionDialogState extends State<DeviceSelectionDialog> {
       _errorMessage = null;
     });
 
-    // Use latest cached adapter state, or wait until known.
+    // On iOS, CBManagerState stays .unknown until Bluetooth permission is
+    // granted. Request permissions FIRST so the adapter state resolves.
+    final hasPermission = await _ensurePermissions();
+    if (!hasPermission) {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+      return;
+    }
+
+    // After permissions are granted the adapter state will be known.
     final preState = _adapterState != BluetoothAdapterState.unknown
         ? _adapterState
         : await FlutterBluePlus.adapterState.firstWhere(
@@ -196,21 +208,19 @@ class _DeviceSelectionDialogState extends State<DeviceSelectionDialog> {
       return;
     }
 
-    final hasPermission = await _ensurePermissions();
-    if (!hasPermission) {
-      setState(() {
-        _isScanning = false;
-      });
-      return;
-    }
-
     try {
-      // Listen to scan results
+      // Listen to scan results.
+      // Check both platformName and advName because on iOS the advertisement
+      // local name is surfaced via advName before the device is cached.
       _scanSubscription = FlutterBluePlus.onScanResults.listen((results) {
         if (!mounted) return;
         final oraDevices = results
+            .where(
+              (r) =>
+                  r.device.platformName.contains('OraStretch') ||
+                  r.advertisementData.advName.contains('OraStretch'),
+            )
             .map((r) => r.device)
-            .where((d) => d.platformName.contains('OraStretch'))
             .toList();
 
         setState(() {
