@@ -2,6 +2,7 @@
 import 'dart:io' show Platform;
 import 'dart:math' show max;
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart' show BluetoothService;
 import 'pages.dart';
 import 'widgets/bluetooth_button.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -203,6 +204,30 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool isBluetoothConnected = false;
 
+  /// Discover services with retry logic (iOS-friendly).
+  /// On iOS, service discovery can fail due to concurrent MTU negotiation.
+  Future<List<BluetoothService>> _discoverServicesWithRetry(
+    BluetoothDevice device,
+    int maxRetries,
+  ) async {
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final services = await device.discoverServices();
+        if (services.isNotEmpty) {
+          return services;
+        }
+      } catch (e) {
+        if (attempt < maxRetries - 1) {
+          // Exponential backoff: 100ms, 200ms, 300ms
+          await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
+        } else {
+          rethrow;
+        }
+      }
+    }
+    throw Exception('Failed to discover services after $maxRetries attempts');
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -263,7 +288,13 @@ class _MyAppState extends State<MyApp> {
                       onDeviceSelected: (device) async {
                         if (device == null) return;
                         try {
-                          final services = await device.discoverServices();
+                          // Retry service discovery (iOS needs this)
+                          const maxRetries = 3;
+                          final services = await _discoverServicesWithRetry(
+                            device,
+                            maxRetries,
+                          );
+
                           BluetoothCharacteristic? chosen;
                           for (final s in services) {
                             for (final c in s.characteristics) {

@@ -260,6 +260,12 @@ class _DeviceSelectionDialogState extends State<DeviceSelectionDialog> {
 
       final connectionState = await device.connectionState.first;
       if (connectionState == BluetoothConnectionState.connected) {
+        // iOS: Add delay for MTU negotiation and GATT database discovery.
+        // Critical for reliable service/characteristic discovery on iOS.
+        if (Platform.isIOS) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+
         widget.onDeviceConnected(true, device);
 
         if (mounted) {

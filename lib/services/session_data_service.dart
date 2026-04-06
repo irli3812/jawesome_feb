@@ -89,14 +89,34 @@ class SessionDataService extends ChangeNotifier {
     /*_commandCharacteristic = commandCharacteristic;*/
 
     debugPrint('🔵 BLE characteristics attached');
-    //debugPrint('DATA UUID: ${_dataCharacteristic?.uuid}');
+    debugPrint('📊 DATA UUID: ${_dataCharacteristic?.uuid}');
     /*debugPrint('CMD  UUID: ${_commandCharacteristic?.uuid}');*/
 
     _bleSub?.cancel();
 
     _bleSub = dataCharacteristic.lastValueStream.listen(_onBleData);
 
-    dataCharacteristic.setNotifyValue(true);
+    // Enable notifications with retry logic for iOS stability
+    _setNotifyValueWithRetry(dataCharacteristic);
+  }
+
+  /// Set notify value with retry logic (iOS-friendly).
+  /// iOS can fail on first attempt due to GATT operation timing.
+  Future<void> _setNotifyValueWithRetry(BluetoothCharacteristic char) async {
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        await char.setNotifyValue(true);
+        debugPrint('✅ Notifications enabled on attempt ${attempt + 1}');
+        return;
+      } catch (e) {
+        debugPrint('⚠️  Notify attempt ${attempt + 1} failed: $e');
+        if (attempt < 2) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        } else {
+          debugPrint('❌ Failed to enable notifications: $e');
+        }
+      }
+    }
   }
 
   /// ─────────────────────────────────────────────
