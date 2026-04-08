@@ -170,7 +170,11 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
             child: _viewMode == ViewMode.meter
                 ? ValueListenableBuilder(
                     valueListenable: box.listenable(
-                      keys: ['session', 'startSignal'],
+                      keys: [
+                        'session',
+                        'startSignal',
+                        'bite_force_current_packet_max_series',
+                      ],
                     ),
                     builder: (context, _, __) {
                       final int? resetSignal = box.get('resetSignal');
@@ -186,18 +190,18 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                         _lastStartSignal = startSignal;
                       }
 
-                      final List avgSeries = box.get(
-                        'bite_force_avg_series',
+                      final List packetMaxSeries = box.get(
+                        'bite_force_current_packet_max_series',
                         defaultValue: [],
                       );
 
-                      final avg = avgSeries.isEmpty
+                      final latestPacketMax = packetMaxSeries.isEmpty
                           ? 0.0
-                          : (avgSeries.last as num).toDouble();
+                          : (packetMaxSeries.last as num).toDouble();
 
                       return SizedBox.expand(
                         child: CustomPaint(
-                          painter: _BiteForceGaugePainter(value: avg),
+                          painter: _BiteForceGaugePainter(value: latestPacketMax),
                         ),
                       );
                     },
@@ -216,6 +220,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                 'session',
                 'bite_force_avg_series',
                 'bite_force_max_series',
+                'bite_force_current_packet_max_series',
                 'resetSignal',
                 'startSignal',
               ],
@@ -237,8 +242,13 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                 defaultValue: [],
               );
 
-              final double latest = avgSeries.isNotEmpty
-                  ? (avgSeries.last as num).toDouble()
+              final List packetMaxSeries = box.get(
+                'bite_force_current_packet_max_series',
+                defaultValue: [],
+              );
+
+              final double latest = packetMaxSeries.isNotEmpty
+                  ? (packetMaxSeries.last as num).toDouble()
                   : 0.0;
 
               double avg = 0.0;

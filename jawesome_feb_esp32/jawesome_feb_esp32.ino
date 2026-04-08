@@ -14,6 +14,7 @@
 #include <BLE2902.h>     // Mandatory for Notifications
 #include <esp_system.h>  // Required for esp_random()
 #include <stdio.h>
+#include <math.h>
 
 // --- 2. CONFIGURATION ---
 // These UUIDs MUST match the Flutter application's definitions
@@ -207,6 +208,7 @@ void loop() {
 
     float normalized = (float)randomInt / UINT32_MAX_F;
     float randomAngle = (normalized * 360.0) - 180.0;
+    float distance = fabs(1.0354 * randomAngle + 6.9685);
 
     angleSum += randomAngle;
 
@@ -253,7 +255,7 @@ void loop() {
       sizeof(dataBuffer) - offset,
       "%lu,%.2f",
       (unsigned int)timestamp,
-      randomAngle);
+      distance);
 
 
     // Append 20 bite forces
