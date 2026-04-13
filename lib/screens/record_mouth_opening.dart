@@ -313,14 +313,13 @@ class _SemiGaugePainter extends CustomPainter {
     final arcPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = isMobile ? 30 : 42
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.butt;
 
     // ===== Smooth ombre arc =====
     final arcRect = Rect.fromCircle(center: center, radius: radius);
-    const double arcEpsilon = 0.001;
     arcPaint.shader = const SweepGradient(
       startAngle: pi,
-      endAngle: 2 * pi - arcEpsilon,
+      endAngle: 2 * pi,
       colors: [
         Color(0xFFCC79A7), // pink (low)
         Color(0xFFE69F00), // orange (medium)
@@ -331,23 +330,10 @@ class _SemiGaugePainter extends CustomPainter {
     canvas.drawArc(
       arcRect,
       pi,
-      pi - arcEpsilon,
+      pi,
       false,
       arcPaint,
     );
-
-    // Force endpoint cap colors so the right cap stays green.
-    final double capRadius = (isMobile ? 30 : 42) / 2;
-    final Offset startCap = Offset(
-      center.dx + cos(pi) * radius,
-      center.dy + sin(pi) * radius,
-    );
-    final Offset endCap = Offset(
-      center.dx + cos(2 * pi) * radius,
-      center.dy + sin(2 * pi) * radius,
-    );
-    canvas.drawCircle(startCap, capRadius, Paint()..color = const Color(0xFFCC79A7));
-    canvas.drawCircle(endCap, capRadius, Paint()..color = const Color(0xFF009E73));
 
     // ===== Tick marks (every 5 mm) =====
     final tickPaint = Paint()
