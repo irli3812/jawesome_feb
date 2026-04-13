@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -233,6 +235,14 @@ class _DeviceSelectionDialogState extends State<DeviceSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final popupButtonStyle = ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      foregroundColor: const Color(0xFF1F2937),
+      disabledBackgroundColor: const Color(0xFFF3F4F6),
+      disabledForegroundColor: const Color(0xFF9CA3AF),
+      side: const BorderSide(color: Color(0xFFE5E7EB)),
+      elevation: 1,
+    );
 
     return AlertDialog(
       title: const Text('Connect OraStretch'),
@@ -255,31 +265,56 @@ class _DeviceSelectionDialogState extends State<DeviceSelectionDialog> {
               )
             : _scanResults.isEmpty && !_isScanning
             ? const Text("No OraStretch devices found nearby.")
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: _scanResults.length,
-                itemBuilder: (context, index) {
-                  final result = _scanResults[index];
-                  return ListTile(
-                    title: Text(
-                      result.device.platformName.isEmpty
-                          ? "Unknown"
-                          : result.device.platformName,
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _scanResults.map((result) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: SizedBox(
+                      width: double.maxFinite,
+                      child: ElevatedButton(
+                        style: popupButtonStyle,
+                        onPressed: () => _connectToDevice(result.device),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                result.device.platformName.isEmpty
+                                    ? "Unknown"
+                                    : result.device.platformName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              result.device.remoteId.str,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    subtitle: Text(result.device.remoteId.str),
-                    leading: const Icon(Icons.bluetooth),
-                    onTap: () => _connectToDevice(result.device),
                   );
-                },
+                }).toList(),
               ),
       ),
       actions: [
-        TextButton(
+        ElevatedButton(
+          style: popupButtonStyle,
           onPressed: () => Navigator.pop(context),
           child: const Text("Cancel"),
         ),
         if (!_isScanning && !_isConnecting)
-          TextButton(onPressed: _startScan, child: const Text("Rescan")),
+          ElevatedButton(
+            style: popupButtonStyle,
+            onPressed: _startScan,
+            child: const Text("Rescan"),
+          ),
       ],
     );
   }

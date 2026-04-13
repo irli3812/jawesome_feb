@@ -26,6 +26,17 @@ import '../main.dart';
 class SpatialBiteForce extends StatelessWidget {
   const SpatialBiteForce({super.key});
 
+  Set<int> _topFiveSensorNumbers(List<double> values) {
+    final ranked = List<int>.generate(values.length, (i) => i)
+      ..sort((a, b) => values[b].compareTo(values[a]));
+
+    return ranked.take(min(5, ranked.length)).map((i) {
+      // Top row (0-9): map to sensor 4-13 (left to right)
+      // Bottom row (10-19): map to sensor 29-20 (reversed left to right)
+      return i < 10 ? i + 4 : 39 - i;
+    }).toSet();
+  }
+
   @override
   Widget build(BuildContext context) {
     final box = Hive.box('appBox');
@@ -60,15 +71,24 @@ class SpatialBiteForce extends StatelessWidget {
 
                     return 0.0;
                   });
+                  final highlightedSensors = _topFiveSensorNumbers(values);
 
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildArch(values.sublist(0, 10), isTop: true),
+                      _buildArch(
+                        values.sublist(0, 10),
+                        isTop: true,
+                        highlightedSensors: highlightedSensors,
+                      ),
                       const SizedBox(height: 6),
                       _buildLegend(context),
                       const SizedBox(height: 6),
-                      _buildArch(values.sublist(10, 20), isTop: false),
+                      _buildArch(
+                        values.sublist(10, 20),
+                        isTop: false,
+                        highlightedSensors: highlightedSensors,
+                      ),
                       const SizedBox(height: 16),
                     ],
                   );
@@ -92,7 +112,11 @@ class SpatialBiteForce extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             gradient: const LinearGradient(
-              colors: [Colors.blue, Colors.orange, Colors.green],
+              colors: [
+                Color(0xFFCC79A7),  // pink (low)
+                Color(0xFFE69F00),  // orange (medium)
+                Color(0xFF009E73),  // green (high)
+              ],
             ),
           ),
         ),
@@ -128,7 +152,11 @@ class SpatialBiteForce extends StatelessWidget {
   }
 
   // ===== ARCH BUILDER (ELLIPTICAL TOUCHING BOXES - NO OVERLAP) =====
-  Widget _buildArch(List<double> vals, {required bool isTop}) {
+  Widget _buildArch(
+    List<double> vals, {
+    required bool isTop,
+    required Set<int> highlightedSensors,
+  }) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = MediaQuery.of(context).size.width;
@@ -217,7 +245,16 @@ class SpatialBiteForce extends StatelessWidget {
                   return Positioned(
                     left: x,
                     top: y,
-                    child: _buildBox(i, vals[i], isTop, boxWidth, boxHeight),
+                    child: _buildBox(
+                      i,
+                      vals[i],
+                      isTop,
+                      boxWidth,
+                      boxHeight,
+                      highlighted: highlightedSensors.contains(
+                        isTop ? i + 4 : 29 - i,
+                      ),
+                    ),
                   );
                 }),
               ),
@@ -235,8 +272,9 @@ class SpatialBiteForce extends StatelessWidget {
     bool isTop,
     double boxWidth,
     double boxHeight,
+    {required bool highlighted}
   ) {
-    final sensorNumber = isTop ? index + 1 : index + 11;
+    final sensorNumber = isTop ? index + 4 : 29 - index;
 
     final color = _valueToColor(value);
     const textColor = Colors.black;
@@ -256,6 +294,9 @@ class SpatialBiteForce extends StatelessWidget {
           decoration: BoxDecoration(
             color: animatedColor,
             borderRadius: BorderRadius.circular(12),
+            border: highlighted
+                ? Border.all(color: Colors.black, width: 3)
+                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -305,8 +346,8 @@ class SpatialBiteForce extends StatelessWidget {
     );
   }
 
-  // ===== COLOR SCALE =====
-  Color _valueToColor(double value) {
+  // ===== COLOR SCALE (matches meter gauge) =====
+  static Color valueToColor(double value) {
     final normalized = ((value - bfMin) / (bfMax - bfMin)).clamp(
       0.0,
       1.0,
@@ -314,10 +355,20 @@ class SpatialBiteForce extends StatelessWidget {
 
     if (normalized < 0.5) {
       final t = normalized / 0.5;
-      return Color.lerp(Colors.blue, Colors.orange, t)!;
+      return Color.lerp(
+        const Color(0xFFCC79A7),  // pink (low)
+        const Color(0xFFE69F00),  // orange (medium)
+        t,
+      )!;
     } else {
       final t = (normalized - 0.5) / 0.5;
-      return Color.lerp(Colors.orange, Colors.green, t)!;
+      return Color.lerp(
+        const Color(0xFFE69F00),  // orange (medium)
+        const Color(0xFF009E73),  // green (high)
+        t,
+      )!;
     }
   }
+
+  Color _valueToColor(double value) => valueToColor(value);
 }

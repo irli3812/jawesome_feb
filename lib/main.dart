@@ -2,6 +2,7 @@
 import 'dart:io' show Platform;
 import 'dart:math' show max;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' show BluetoothService;
 import 'pages.dart';
 import 'widgets/bluetooth_button.dart';
@@ -11,6 +12,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   await Hive.initFlutter();
   await Hive.openBox('appBox');
   await Hive.openBox('savedSessionsBox');
@@ -235,6 +239,9 @@ class _MyAppState extends State<MyApp> {
       title: 'OraStretch Tech',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        snackBarTheme: const SnackBarThemeData(
+          contentTextStyle: TextStyle(fontSize: 18),
+        ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,

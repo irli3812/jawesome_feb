@@ -184,7 +184,7 @@ class SessionDataService extends ChangeNotifier {
     times.add(elapsed);
     _box.put(_timeKey, times);
 
-    // Store mouth opening (current distance only)
+    // Store mouth opening (raw distance from ESP32)
     final List IOcurrentSeries = List.from(
       _box.get(_IOcurrentSeriesKey, defaultValue: []),
     );

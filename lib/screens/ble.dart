@@ -82,10 +82,11 @@ class _BLEdataState extends State<BLEdata> {
                           final row = session[index];
 
                           final int time = (row['time_ms'] ?? 0) as int;
-                          final double mio = (row['mouth_opening'] ?? 0)
-                              .toDouble();
-                            final double maxMio = (row['max_mouth_opening'] ?? 0)
-                              .toDouble();
+                            final double mio =
+                              ((row['mouth_opening'] ?? 0) as num).toDouble();
+                            final double maxMio =
+                              ((row['max_mouth_opening'] ?? 0) as num)
+                                .toDouble();
 
                           return Padding(
                             padding: const EdgeInsets.symmetric(

@@ -185,7 +185,7 @@ class _MouthOpeningPainter extends CustomPainter {
 
     final yLabel = TextPainter(
       text: const TextSpan(
-        text: "Mouth Opening (degrees)",
+        text: "Mouth Opening (mm)",
         style: TextStyle(
           color: Colors.black,
           fontSize: 18,

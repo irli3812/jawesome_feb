@@ -96,8 +96,8 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                 Expanded(
                   child: Text(
                     _viewMode == ViewMode.meter
-                        ? 'Latest Mouth Opening Distance (mm)'
-                        : 'Current Mouth Opening Distance and Time',
+                        ? 'Latest (mm)'
+                        : 'Distance over Time',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.left,
@@ -112,7 +112,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text(
-                      'Select Mode',
+                      'Select View',
                       style: TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
@@ -235,7 +235,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Running Max',
+                            'Overall Max So Far',
                             maxLines: 1,
                             softWrap: false,
                             textAlign: TextAlign.center,
@@ -315,33 +315,39 @@ class _SemiGaugePainter extends CustomPainter {
       ..strokeWidth = isMobile ? 30 : 42
       ..strokeCap = StrokeCap.round;
 
-    // ===== Colored arcs =====
-    arcPaint.color = Color(0xFF009E73); // teal (low)
+    // ===== Smooth ombre arc =====
+    final arcRect = Rect.fromCircle(center: center, radius: radius);
+    const double arcEpsilon = 0.001;
+    arcPaint.shader = const SweepGradient(
+      startAngle: pi,
+      endAngle: 2 * pi - arcEpsilon,
+      colors: [
+        Color(0xFFCC79A7), // pink (low)
+        Color(0xFFE69F00), // orange (medium)
+        Color(0xFF009E73), // green (high)
+      ],
+      stops: [0.0, 0.5, 1.0],
+    ).createShader(arcRect);
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
+      arcRect,
       pi,
-      pi / 3,
+      pi - arcEpsilon,
       false,
       arcPaint,
     );
 
-    arcPaint.color = Color(0xFFE69F00); // orange (medium)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      pi + pi / 3,
-      pi / 3,
-      false,
-      arcPaint,
+    // Force endpoint cap colors so the right cap stays green.
+    final double capRadius = (isMobile ? 30 : 42) / 2;
+    final Offset startCap = Offset(
+      center.dx + cos(pi) * radius,
+      center.dy + sin(pi) * radius,
     );
-
-    arcPaint.color = Color(0xFFCC79A7); // purple (high)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      pi + 2 * pi / 3,
-      pi / 3,
-      false,
-      arcPaint,
+    final Offset endCap = Offset(
+      center.dx + cos(2 * pi) * radius,
+      center.dy + sin(2 * pi) * radius,
     );
+    canvas.drawCircle(startCap, capRadius, Paint()..color = const Color(0xFFCC79A7));
+    canvas.drawCircle(endCap, capRadius, Paint()..color = const Color(0xFF009E73));
 
     // ===== Tick marks (every 5 mm) =====
     final tickPaint = Paint()

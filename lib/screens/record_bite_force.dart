@@ -4,9 +4,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../widgets/spatial_bite_force.dart';
 import '../main.dart';
 import '../widgets/ts_bite_force.dart';
-import '../widgets/spatial_bite_force.dart';
 
 enum ViewMode { spatial, meter, timeseries }
 
@@ -100,10 +100,10 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                 Expanded(
                   child: Text(
                     _viewMode == ViewMode.meter
-                        ? 'Latest Bite Force (N)'
+                        ? 'Latest Avg of Top 5 Teeth (N)'
                         : _viewMode == ViewMode.spatial
                         ? 'Colored Teeth Force Map'
-                        : 'Current Bite Force and Time',
+                        : 'Avg Bite Force per Region',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.left,
@@ -118,7 +118,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text(
-                      'Select Mode',
+                      'Select View',
                       style: TextStyle(
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
@@ -260,7 +260,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Latest',
+                            'Latest Avg of Top 5 Teeth',
                             maxLines: 1,
                             softWrap: false,
                             textAlign: TextAlign.center,
@@ -275,7 +275,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Max',
+                            'Overall Max So Far',
                             maxLines: 1,
                             softWrap: false,
                             textAlign: TextAlign.center,
@@ -292,14 +292,46 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                   Row(
                     children: [
                       Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            latest.toStringAsFixed(1),
-                            maxLines: 1,
-                            softWrap: false,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: metricValueSize),
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: SpatialBiteForce.valueToColor(latest),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.black,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: Text(
+                                  latest.toStringAsFixed(1),
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: metricValueSize,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '(Locations outlined)',
+                                maxLines: 1,
+                                softWrap: false,
+                                style: TextStyle(
+                                  fontSize: metricValueSize * 0.65,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -354,33 +386,39 @@ class _BiteForceGaugePainter extends CustomPainter {
       ..strokeWidth = isMobile ? 30 : 42
       ..strokeCap = StrokeCap.round;
 
-    // ===== Colored arcs =====
-    arcPaint.color = Color(0xFF009E73); // teal (low)
+    // ===== Smooth ombre arc =====
+    final arcRect = Rect.fromCircle(center: center, radius: radius);
+    const double arcEpsilon = 0.001;
+    arcPaint.shader = const SweepGradient(
+      startAngle: pi,
+      endAngle: 2 * pi - arcEpsilon,
+      colors: [
+        Color(0xFFCC79A7), // pink (low)
+        Color(0xFFE69F00), // orange (medium)
+        Color(0xFF009E73), // green (high)
+      ],
+      stops: [0.0, 0.5, 1.0],
+    ).createShader(arcRect);
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
+      arcRect,
       pi,
-      pi / 3,
+      pi - arcEpsilon,
       false,
       arcPaint,
     );
 
-    arcPaint.color = Color(0xFFE69F00); // orange (medium)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      pi + pi / 3,
-      pi / 3,
-      false,
-      arcPaint,
+    // Force endpoint cap colors so the right cap stays green.
+    final double capRadius = (isMobile ? 30 : 42) / 2;
+    final Offset startCap = Offset(
+      center.dx + cos(pi) * radius,
+      center.dy + sin(pi) * radius,
     );
-
-    arcPaint.color = Color(0xFFCC79A7); // purple (high)
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      pi + 2 * pi / 3,
-      pi / 3,
-      false,
-      arcPaint,
+    final Offset endCap = Offset(
+      center.dx + cos(2 * pi) * radius,
+      center.dy + sin(2 * pi) * radius,
     );
+    canvas.drawCircle(startCap, capRadius, Paint()..color = const Color(0xFFCC79A7));
+    canvas.drawCircle(endCap, capRadius, Paint()..color = const Color(0xFF009E73));
 
     // ===== Tick marks (every 10 N) =====
     final tickPaint = Paint()

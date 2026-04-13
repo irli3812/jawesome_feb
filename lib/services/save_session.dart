@@ -87,13 +87,13 @@ class SaveSessionService {
         : null;
 
     final List<dynamic> mioMaxSeries = List<dynamic>.from(
-      appBox.get('mouth_opening_max_series', defaultValue: <dynamic>[]),
+      appBox.get('mouth_opening_running_max_series', defaultValue: <dynamic>[]),
     );
     final dynamic latestMioMaxRaw = mioMaxSeries.isNotEmpty
         ? mioMaxSeries.last
         : null;
     final double? latestMioMax = latestMioMaxRaw is num
-        ? latestMioMaxRaw.toDouble()
+      ? latestMioMaxRaw.toDouble()
         : null;
 
     final Map<String, dynamic> row = {
