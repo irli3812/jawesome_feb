@@ -96,7 +96,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                 Expanded(
                   child: Text(
                     _viewMode == ViewMode.meter
-                        ? 'Latest (mm)'
+                        ? 'Current distance (mm)'
                         : 'Distance over Time',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -220,7 +220,7 @@ class _RecordMouthOpeningState extends State<RecordMouthOpening> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Latest',
+                            'Current',
                             maxLines: 1,
                             softWrap: false,
                             textAlign: TextAlign.center,

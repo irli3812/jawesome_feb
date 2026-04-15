@@ -13,9 +13,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Hive.initFlutter();
   await Hive.openBox('appBox');
   await Hive.openBox('savedSessionsBox');
@@ -129,7 +127,7 @@ const int mioMajorDivs = 2;
 
 /// Global Meter Gauge Limits RECORD BITE FORCE (BF)
 const double bfMin = 0.0;
-const double bfMax = 40.0;
+const double bfMax = 150.0;
 const int bfMinorDivs = 15;
 const int bfMajorDivs = 5;
 
@@ -208,7 +206,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool isBluetoothConnected = false;
-  BluetoothCharacteristic? _calibrationCharacteristic;
 
   /// Discover services with retry logic (iOS-friendly).
   /// On iOS, service discovery can fail due to concurrent MTU negotiation.
@@ -284,27 +281,20 @@ class _MyAppState extends State<MyApp> {
                 child: Center(
                   child: SizedBox(
                     height: 34,
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       onPressed:
-                          (isBluetoothConnected && _calibrationCharacteristic != null)
-                          ? () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => CalibrationScreen(
-                                    isBluetoothConnected: isBluetoothConnected,
-                                    characteristic: _calibrationCharacteristic,
-                                  ),
-                                ),
-                              );
+                          (isBluetoothConnected &&
+                              Calibration.writeCharacteristic != null)
+                          ? () async {
+                              await Calibration.calibrate();
                             }
                           : null,
-                      icon: const Icon(Icons.tune, size: 16),
-                      label: const Text('Calibrate'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFF1F2937),
                       ),
+                      child: const Icon(Icons.tune, size: 16),
                     ),
                   ),
                 ),
@@ -323,80 +313,81 @@ class _MyAppState extends State<MyApp> {
                           setState(() {
                             isBluetoothConnected = isConnected;
                             if (!isConnected) {
-                              _calibrationCharacteristic = null;
+                              Calibration.writeCharacteristic = null;
                             }
                           });
                         },
-                    onDeviceSelected: (device) async {
-                      if (device == null) return;
-                      try {
-                        // Retry service discovery (iOS needs this)
-                        const maxRetries = 3;
-                        final services = await _discoverServicesWithRetry(
-                          device,
-                          maxRetries,
-                        );
+                        onDeviceSelected: (device) async {
+                          if (device == null) return;
+                          try {
+                            // Retry service discovery (iOS needs this)
+                            const maxRetries = 3;
+                            final services = await _discoverServicesWithRetry(
+                              device,
+                              maxRetries,
+                            );
 
-                        BluetoothCharacteristic? chosen;
-                        BluetoothCharacteristic? writable;
-                        BluetoothCharacteristic? writableFallback;
-                        const cmdUuidSuffix = 'ff01';
-                        for (final s in services) {
-                          for (final c in s.characteristics) {
-                            if (chosen == null && c.properties.notify) {
-                              chosen = c;
+                            BluetoothCharacteristic? chosen;
+                            BluetoothCharacteristic? writable;
+                            BluetoothCharacteristic? writableFallback;
+                            const cmdUuidSuffix = 'ff01';
+                            for (final s in services) {
+                              for (final c in s.characteristics) {
+                                if (chosen == null && c.properties.notify) {
+                                  chosen = c;
+                                }
+                                final isWritable =
+                                    c.properties.write ||
+                                    c.properties.writeWithoutResponse;
+                                if (isWritable) {
+                                  if (c.uuid.str.contains(cmdUuidSuffix)) {
+                                    writable = c; // prefer ff01
+                                  } else {
+                                    writableFallback ??= c;
+                                  }
+                                }
+                              }
+                              if (chosen != null && writable != null) break;
                             }
-                            final isWritable = c.properties.write ||
-                                c.properties.writeWithoutResponse;
-                            if (isWritable) {
-                              if (c.uuid.str.contains(cmdUuidSuffix)) {
-                                writable = c; // prefer ff01
-                              } else {
-                                writableFallback ??= c;
+                            writable ??= writableFallback;
+                            if (chosen == null) {
+                              for (final s in services) {
+                                if (s.characteristics.isNotEmpty) {
+                                  chosen = s.characteristics.first;
+                                  break;
+                                }
                               }
                             }
-                          }
-                          if (chosen != null && writable != null) break;
-                        }
-                        writable ??= writableFallback;
-                        if (chosen == null) {
-                          for (final s in services) {
-                            if (s.characteristics.isNotEmpty) {
-                              chosen = s.characteristics.first;
-                              break;
+                            if (chosen != null) {
+                              SessionDataService().attachBleCharacteristics(
+                                chosen,
+                              );
+                              if (mounted) {
+                                setState(() {
+                                  Calibration.writeCharacteristic = writable;
+                                });
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No notifiable characteristic found on device.',
+                                  ),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
                             }
-                          }
-                        }
-                        if (chosen != null) {
-                          SessionDataService().attachBleCharacteristics(
-                            chosen,
-                          );
-                          if (mounted) {
-                            setState(() {
-                              _calibrationCharacteristic = writable;
-                            });
-                          }
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'No notifiable characteristic found on device.',
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error discovering characteristics: ${e.toString()}',
+                                ),
+                                duration: const Duration(seconds: 3),
                               ),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Error discovering characteristics: ${e.toString()}',
-                            ),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    },
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

@@ -15,6 +15,7 @@
 #include <esp_system.h>  // Required for esp_random()
 #include <stdio.h>
 #include <math.h>
+#include <string>
 
 // --- 2. CONFIGURATION ---
 // These UUIDs MUST match the Flutter application's definitions
@@ -73,15 +74,16 @@ class MyServerCallbacks : public BLEServerCallbacks {
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pCharacteristic) {
 
-    String value = pCharacteristic->getValue();
-    value.trim();
+    String rxValue = pCharacteristic->getValue();
 
-    if (value == "C") {
+    if (rxValue.length() > 0) {
 
-      Serial.println("Command received: ");
-      Serial.println(value);
+      Serial.print("Command received: ");
+      Serial.println(rxValue);
 
-      calibrationRequested = true;
+      if (rxValue[0] == 'C') {
+        calibrationRequested = true;
+      }
     }
   }
 };
@@ -90,7 +92,7 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
 float computeTopQuartileAvg(float* data, int size) {
 
   // Copy array so we don't modify original
-  float temp[size];
+  float temp[NUM_BITES];
 
   for (int i = 0; i < size; i++) {
     temp[i] = data[i];
@@ -128,6 +130,7 @@ void callback(uint8_t* pData, size_t length) {
 void setup() {
 
   Serial.begin(115200);
+  delay(2000);
   Serial.println("Starting ESP32C6 BLE Random Angle Server...");
 
   // --- Pin Setup ---
@@ -152,7 +155,9 @@ void setup() {
   // 4. Create DATA characteristic (READ + NOTIFY)
   pTxCharacteristic = pService->createCharacteristic(
     CHARACTERISTIC_UUID,
-    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+    BLECharacteristic::PROPERTY_WRITE | 
+    BLECharacteristic::PROPERTY_READ | 
+    BLECharacteristic::PROPERTY_NOTIFY);
 
   pTxCharacteristic->addDescriptor(new BLE2902());
 
@@ -239,6 +244,8 @@ void loop() {
 
       calibrationRequested = false;
 
+      // ADD CALIBRATION LOGIC HERE
+
       Serial.println("Calibration executed");
 
       angleSum = 0.0;
@@ -314,8 +321,8 @@ void loop() {
       batteryPercent);
 
     // Send data
-    Serial.print("Sending Data: ");
-    Serial.println(dataBuffer);
+    //Serial.print("Sending Data: ");
+    //Serial.println(dataBuffer);
 
     pTxCharacteristic->setValue(dataBuffer);
     pTxCharacteristic->notify();

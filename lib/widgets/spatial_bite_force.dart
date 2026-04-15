@@ -277,7 +277,7 @@ class SpatialBiteForce extends StatelessWidget {
     final sensorNumber = isTop ? index + 4 : 29 - index;
 
     final color = _valueToColor(value);
-    const textColor = Colors.black;
+    const textColor = Colors.white;
 
     // Scale text sizes based on box dimensions
     final sensorFontSize = (boxWidth * 0.32).clamp(10.0, 24.0);
@@ -294,9 +294,6 @@ class SpatialBiteForce extends StatelessWidget {
           decoration: BoxDecoration(
             color: animatedColor,
             borderRadius: BorderRadius.circular(12),
-            border: highlighted
-                ? Border.all(color: Colors.black, width: 3)
-                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

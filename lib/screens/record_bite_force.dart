@@ -100,7 +100,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                 Expanded(
                   child: Text(
                     _viewMode == ViewMode.meter
-                        ? 'Latest Avg of Top 5 Teeth (N)'
+                        ? 'Current Avg of Top 5 Teeth (N)'
                         : _viewMode == ViewMode.spatial
                         ? 'Colored Teeth Force Map'
                         : 'Avg Bite Force per Region',
@@ -260,7 +260,7 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'Latest Avg of Top 5 Teeth',
+                            'Current Avg of Top 5 Teeth',
                             maxLines: 1,
                             softWrap: false,
                             textAlign: TextAlign.center,
@@ -304,10 +304,6 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                                 decoration: BoxDecoration(
                                   color: SpatialBiteForce.valueToColor(latest),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.black,
-                                    width: 3,
-                                  ),
                                 ),
                                 child: Text(
                                   latest.toStringAsFixed(1),
@@ -318,17 +314,6 @@ class _RecordBiteForceState extends State<RecordBiteForce> {
                                     fontSize: metricValueSize,
                                     color: Colors.white,
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '(Locations outlined)',
-                                maxLines: 1,
-                                softWrap: false,
-                                style: TextStyle(
-                                  fontSize: metricValueSize * 0.65,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.grey[600],
                                 ),
                               ),
                             ],
